@@ -68,3 +68,63 @@ Keep entries public-ready: completed work, decisions and rationale, useful faile
   source ancestry was pushed or rewritten. After the required fresh user
   choice, the isolated sanitized fallback passed with 18 files included and one
   private file excluded and became current in its private GitHub repository.
+- Published the audited skill payload separately at
+  `https://github.com/wildbillwilly-a51/new-project-setup-skill` under the MIT
+  License. The public repository has isolated history, public installation and
+  update instructions, and a verified installable payload. It is maintained
+  only when the user requests a manual update; this does not change the
+  reusable workflow or its private GitHub behavior.
+- Established a version-4 efficiency baseline at source commit `6b25bc5`: an
+  estimated 3,282 tokens in `SKILL.md`, 3,489 tokens in the mandatory checklist,
+  6,770 tokens on the routine mandatory path, and 958 tokens in the generated
+  managed policy. Source and installed validators, all PowerShell parser checks,
+  exact runtime parity, and the complete regression suite passed before edits.
+- Implemented workflow version 5 with progressive disclosure. Routine setup
+  executes deterministic scripts without reading their source; prerequisite,
+  execution/memory, GitHub-history, and final-audit details are now separate
+  conditional references. Durable work starts with status, the concise handoff,
+  and directly relevant files rather than unconditional log and checklist reads.
+- Added an effort axis independent of durability and operational authority,
+  compact distinct-risk evidence ledgers, evidence invalidation and reuse,
+  shared-cause failure batching, one broad final validation matrix, and a
+  bounded convergence path ending in preserved diagnostics and an honest local
+  blocker when materially different root-cause attempts fail.
+- Preserved low-intervention behavior and protected boundaries. The final policy
+  clarifies new-project versus existing-project activation, safe exploratory
+  cleanup, handoff evidence carryover, and separate confirmation immediately
+  before deployment. Independent raw-artifact reviews drove these clarifications
+  without exposing regression assertions or intended answers.
+- Added deterministic version-4 migration, custom guidance and memory
+  preservation fixtures, a frozen behavior baseline, nine automated behavior
+  scenarios, and exact ten-file installed-payload manifests. No production
+  project or manual user testing is used for evaluation.
+- Measured the current routine mandatory path at approximately 2,450 tokens, a
+  63.8% reduction from the version-4 baseline. The generated managed policy is
+  approximately 1,064 tokens, 11.1% above baseline and within the explicit 15%
+  guard while carrying the new effort, evidence, convergence, handoff, cleanup,
+  and deployment rules. Tool-call and exact model-token telemetry are not
+  exposed by the deterministic fixture, so those remain reported limitations.
+- Final clean-agent reviews confirmed the scenario classifications and finite
+  convergence behavior, then exposed source/runtime direction, redirected-path,
+  malformed-marker, cleanup, and handoff-bookkeeping gaps. The apply helper now
+  refuses installed-runtime overwrite of an authoritative source project,
+  rejects links or junctions on managed paths before writing, fails closed on
+  incomplete or duplicate markers, repairs empty memory files, and records
+  handoff sync state relative to the containing commit.
+- A final raw-artifact review found that unrelated scripts at the two managed
+  helper paths could be overwritten and that a later preflight failure could
+  leave partial setup. Helpers now carry ownership markers, exact known legacy
+  hashes remain migratable, unowned collisions fail closed, and paths, markers,
+  state JSON, bundled helpers, and helper ownership are all checked before the
+  first write. Initial handoff creation now occurs only after managed state and
+  helper writes succeed.
+- Preserved the deliberate local-history security model: local Git may retain
+  private content, while committed source-history audit blocks that ancestry
+  from GitHub and routes only through explicit isolated sanitized fallback or a
+  separate history-remediation task. A pre-commit gate that would prevent local
+  preservation was therefore not added.
+- Final validation passed the source and installed validators, eight PowerShell
+  parser checks, apply/check idempotency, nine deterministic behavior scenarios,
+  the complete adversarial regression suite, and exact inventory plus SHA-256
+  parity for the ten-file installed runtime payload. The separate manually
+  maintained public distribution was not inspected or changed.

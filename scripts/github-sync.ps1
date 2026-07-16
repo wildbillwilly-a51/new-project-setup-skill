@@ -1,3 +1,4 @@
+# new-project-setup:managed-helper:v1
 [CmdletBinding()]
 param(
     [string]$ProjectRoot = ".",

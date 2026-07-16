@@ -2,6 +2,22 @@
 
 ## 2026-07-15
 
+- Introduced workflow version 5 with progressive context loading, independently
+  inferred validation effort, and conditional installation, execution, and
+  GitHub references.
+- Added distinct-risk evidence reuse, bounded validation matrices, shared-cause
+  repair batching, strategy changes for non-converging work, and a defined
+  unresolved-local-failure stop state.
+- Added deterministic version-4 migration and automated behavior evaluations
+  while preserving bare invocation, target isolation, autonomous bounded work,
+  proportional public-ready memory, protected boundaries, and audited private
+  GitHub history.
+- Hardened target application with source-first authority, no-write preflight,
+  redirected-path and malformed-marker rejection, managed-helper ownership, and
+  convergent containing-commit handoff state.
+- Published a separate MIT-licensed public distribution repository for sharing
+  the skill, with manual updates kept separate from the reusable project
+  workflow.
 - Introduced workflow version 4 with automatic small-lasting, normal-lasting,
   and exploratory work treatment that does not require remembered trigger
   phrases and does not treat `quick`, `prototype`, or `MVP` as disposable by

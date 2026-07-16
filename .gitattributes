@@ -3,7 +3,7 @@
 *.ps1 text eol=crlf
 *.sh text eol=lf
 
-# new-project-setup:v4:start
+# new-project-setup:v5:start
 * text=auto
 *.ps1 text eol=crlf
 *.cmd text eol=crlf
@@ -13,4 +13,4 @@
 *.json text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
-# new-project-setup:v4:end
+# new-project-setup:v5:end

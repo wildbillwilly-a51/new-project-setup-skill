@@ -1,7 +1,7 @@
 interface:
   display_name: "New Project Setup"
-  short_description: "Set up adaptive work and durable project memory"
-  default_prompt: "Use $new-project-setup to install or sync adaptive low-intervention execution, durable project memory, and audited private GitHub history for this project."
+  short_description: "Set up efficient autonomous work and durable memory"
+  default_prompt: "Use $new-project-setup to install or sync progressive-context autonomous execution, durable project memory, and audited private GitHub history for this project."
 
 policy:
   allow_implicit_invocation: true

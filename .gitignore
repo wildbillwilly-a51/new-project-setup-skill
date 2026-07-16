@@ -11,7 +11,7 @@ Thumbs.db
 __pycache__/
 .pytest_cache/
 
-# new-project-setup:v4:start
+# new-project-setup:v5:start
 # Machine-local private documentation
 *.local.md
 .github-backup.local.json
@@ -25,4 +25,4 @@ out/
 coverage/
 test-artifacts/
 playwright-report/
-# new-project-setup:v4:end
+# new-project-setup:v5:end

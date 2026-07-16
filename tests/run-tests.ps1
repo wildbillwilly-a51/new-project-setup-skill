@@ -4,6 +4,7 @@ $backupScript = Join-Path $projectRoot 'scripts\github-backup.ps1'
 $githubSyncScript = Join-Path $projectRoot 'scripts\github-sync.ps1'
 $applyScript = Join-Path $projectRoot 'scripts\apply-project-setup.ps1'
 $syncScript = Join-Path $projectRoot 'scripts\sync-installed-skill.ps1'
+$behaviorScript = Join-Path $projectRoot 'tests\run-behavior-evaluations.ps1'
 $testRoot = Join-Path $env:TEMP ("new-project-setup-tests-" + [Guid]::NewGuid().ToString('N'))
 
 function Assert-True {
@@ -55,6 +56,19 @@ function Invoke-SyncChild {
     finally { $ErrorActionPreference = $previousPreference }
 }
 
+function Invoke-ApplyChild {
+    param([string]$Path, [string]$ScriptPath = $applyScript, [switch]$Check)
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $ScriptPath, '-ProjectRoot', $Path)
+    if ($Check) { $arguments += '-Check' }
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & powershell @arguments *> $null
+        return $LASTEXITCODE
+    }
+    finally { $ErrorActionPreference = $previousPreference }
+}
+
 function New-FakeGh {
     param([string]$BinPath, [string]$RemotePath, [string]$Visibility = 'PRIVATE')
     New-Item -ItemType Directory -Force -Path $BinPath | Out-Null
@@ -77,7 +91,8 @@ try {
         'scripts\github-sync.ps1',
         'scripts\sync-installed-skill.ps1',
         'scripts\sync-from-installed-skill.ps1',
-        'scripts\validate-skill.ps1'
+        'scripts\validate-skill.ps1',
+        'tests\run-behavior-evaluations.ps1'
     )
     foreach ($relative in $scripts) {
         $tokens = $null
@@ -94,31 +109,171 @@ try {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $applyScript -ProjectRoot $applyRepo -Check *> $null
     Assert-True ($LASTEXITCODE -eq 0) 'Target apply is not idempotent.'
     $agents = Get-Content -Raw -LiteralPath (Join-Path $applyRepo 'AGENTS.md')
-    $normalizedAgents = $agents -replace '\s+', ' '
+    $normalizedAgents = ($agents -replace '\s+', ' ').ToLowerInvariant()
     Assert-True $agents.Contains('Preserve this rule') 'Target apply removed project-specific guidance.'
-    Assert-True $agents.Contains('new-project-setup:v4:start') 'Target apply marker missing.'
+    Assert-True $agents.Contains('new-project-setup:v5:start') 'Target apply marker missing.'
     foreach ($marker in @(
-        'genuinely ambiguous',
-        'do not by themselves',
-        'make work disposable',
-        'established project-local dependencies',
-        'new empty local database',
-        'Never demote lasting work',
-        'Proportional work tracking'
+        'ambiguous durability',
+        'do not imply it',
+        'reasonable initial stack',
+        'confirmed unused',
+        'never demote',
+        'Proportional durable memory',
+        'operational risk, and effort independently',
+        'Do not ask for routine implementation, context expansion, or validation transitions',
+        'another equivalent screenshot is not new evidence',
+        'retest only failed/invalidated cells',
+        'run one effort-appropriate final matrix',
+        'do not start another broad matrix',
+        'strategy change',
+        'report an unresolved blocker',
+        'valid and remaining evidence',
+        'bookkeeping-only commit',
+        'obtain separate confirmation immediately before deployment',
+        'source helper, then sync runtime'
     )) {
-        Assert-True $normalizedAgents.Contains($marker) "Adaptive target guidance is missing: $marker"
+        Assert-True $normalizedAgents.Contains($marker.ToLowerInvariant()) "Adaptive target guidance is missing: $marker"
     }
     Assert-True (Test-Path -LiteralPath (Join-Path $applyRepo 'docs\development-log.md')) 'Development log was not installed.'
     Assert-True (Test-Path -LiteralPath (Join-Path $applyRepo 'docs\codex-handoff.md')) 'Codex handoff was not installed.'
+    $initialHandoff = Get-Content -Raw -LiteralPath (Join-Path $applyRepo 'docs\codex-handoff.md')
+    Assert-True ($initialHandoff -match 'validation, commit, and GitHub synchronization remain') 'Initial handoff falsely reports completed setup.'
+    Assert-True ($initialHandoff -notmatch 'Project setup complete') 'Initial handoff claims completion before validation.'
     Assert-True (Test-Path -LiteralPath (Join-Path $applyRepo 'scripts\github-sync.ps1')) 'GitHub sync helper was not installed.'
     $state = Get-Content -Raw -LiteralPath (Join-Path $applyRepo '.codex\new-project-setup.json') | ConvertFrom-Json
-    Assert-True ([int]$state.workflow_version -eq 4 -and $state.github_mode -eq 'private-public-ready') 'Version-4 workflow state is invalid.'
-    Assert-True ($state.audit_failure_action -eq 'ask' -and $state.codex_handoff -eq 'always') 'Version-4 interaction or memory state is invalid.'
+    Assert-True ([int]$state.workflow_version -eq 5 -and $state.github_mode -eq 'private-public-ready') 'Version-5 workflow state is invalid.'
+    Assert-True ($state.audit_failure_action -eq 'ask' -and $state.codex_handoff -eq 'always') 'Version-5 interaction or memory state is invalid.'
+    Assert-True ($state.handoff_presence -eq 'required' -and $state.handoff_refresh -eq 'state-boundary') 'Handoff presence or refresh state is invalid.'
+    Assert-True ($state.handoff_evidence -eq 'summary' -and $state.handoff_sync_reference -eq 'containing-commit') 'Handoff evidence or sync-reference state is invalid.'
     Assert-True ($state.execution_mode -eq 'adaptive' -and $state.durability_ambiguity_action -eq 'ask') 'Adaptive classification state is invalid.'
     Assert-True ($state.classification_notice -eq 'concise' -and $state.documentation_detail -eq 'proportional') 'Adaptive communication or documentation state is invalid.'
-    Assert-True ($state.routine_project_dependencies -eq 'allow' -and $state.isolated_local_build -eq 'allow') 'Routine local build authority is invalid.'
+    Assert-True ($state.routine_project_dependencies -eq 'allow' -and $state.new_project_stack -eq 'allow' -and $state.isolated_local_build -eq 'allow') 'Routine local build authority is invalid.'
+    Assert-True ($state.exploration_cleanup -eq 'own-current-artifacts-only' -and $state.deployment_confirmation -eq 'separate') 'Exploration cleanup or deployment confirmation state is invalid.'
+    Assert-True ($state.context_loading -eq 'progressive' -and $state.effort_classification -eq 'adaptive') 'Progressive context or adaptive effort state is invalid.'
+    Assert-True ($state.validation_strategy -eq 'risk-based' -and $state.evidence_reuse -eq 'required') 'Validation or evidence-reuse state is invalid.'
+    Assert-True ($state.convergence_action -eq 'change-strategy' -and $state.final_validation_matrix -eq 'one-broad-pass-then-invalidated-only' -and $state.final_validation_scope -eq 'effort-appropriate') 'Convergence or final-matrix state is invalid.'
+    Assert-True ($state.evidence_definition -eq 'distinct-risk' -and $state.convergence_escalation -eq 'minimal-reproducer') 'Evidence definition or convergence escalation state is invalid.'
+    Assert-True ($state.risk_set -eq 'bounded-to-objective' -and $state.unresolved_local_failure -eq 'preserve-and-report') 'Risk-set or unresolved-failure state is invalid.'
+    Assert-True ($state.source_authority -eq 'source-first' -and $state.target_path_policy -eq 'contained-no-reparse' -and $state.managed_marker_policy -eq 'unique-fail-closed') 'Source authority, target containment, or marker state is invalid.'
+    Assert-True ($state.apply_preflight -eq 'fail-before-write' -and $state.helper_ownership -eq 'marker-or-known-hash') 'Apply preflight or helper ownership state is invalid.'
     $attributeCheck = git -C $applyRepo check-attr text -- README.md 2>&1
     Assert-True ($LASTEXITCODE -eq 0) "Generated .gitattributes is invalid: $($attributeCheck -join ' ')"
+
+    $emptyMemoryRepo = Join-Path $testRoot 'empty-memory'
+    Initialize-TestRepo $emptyMemoryRepo
+    New-Item -ItemType Directory -Force -Path (Join-Path $emptyMemoryRepo 'docs') | Out-Null
+    foreach ($relative in @('docs\development-log.md', 'docs\codex-handoff.md', 'CHANGELOG.md')) {
+        [IO.File]::WriteAllText((Join-Path $emptyMemoryRepo $relative), '')
+    }
+    Assert-True ((Invoke-ApplyChild $emptyMemoryRepo) -eq 0) 'Empty memory-file repair failed.'
+    Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $emptyMemoryRepo 'docs\development-log.md')) -match '# Development Log') 'Empty development log was not initialized.'
+    Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $emptyMemoryRepo 'docs\codex-handoff.md')) -match 'Validation remaining') 'Empty handoff was not initialized.'
+    Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $emptyMemoryRepo 'CHANGELOG.md')) -match '# Changelog') 'Empty changelog was not initialized.'
+
+    $malformedRepo = Join-Path $testRoot 'malformed-marker'
+    Initialize-TestRepo $malformedRepo
+    Set-Content -LiteralPath (Join-Path $malformedRepo 'AGENTS.md') -Value @(
+        '# Existing guidance',
+        '<!-- new-project-setup:v5:start -->',
+        'unterminated managed block'
+    )
+    $malformedBefore = Get-Content -Raw -LiteralPath (Join-Path $malformedRepo 'AGENTS.md')
+    Assert-True ((Invoke-ApplyChild $malformedRepo) -ne 0) 'Incomplete managed markers were accepted.'
+    Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $malformedRepo 'AGENTS.md')) -eq $malformedBefore) 'Incomplete marker failure modified project guidance.'
+
+    $duplicateRepo = Join-Path $testRoot 'duplicate-marker'
+    Initialize-TestRepo $duplicateRepo
+    Set-Content -LiteralPath (Join-Path $duplicateRepo 'AGENTS.md') -Value @(
+        '<!-- new-project-setup:v5:start -->',
+        'first block',
+        '<!-- new-project-setup:v5:end -->',
+        '<!-- new-project-setup:v5:start -->',
+        'second block',
+        '<!-- new-project-setup:v5:end -->'
+    )
+    $duplicateBefore = Get-Content -Raw -LiteralPath (Join-Path $duplicateRepo 'AGENTS.md')
+    Assert-True ((Invoke-ApplyChild $duplicateRepo) -ne 0) 'Duplicate managed markers were accepted.'
+    Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $duplicateRepo 'AGENTS.md')) -eq $duplicateBefore) 'Duplicate marker failure modified project guidance.'
+
+    $lateMarkerRepo = Join-Path $testRoot 'late-malformed-marker'
+    Initialize-TestRepo $lateMarkerRepo
+    Set-Content -LiteralPath (Join-Path $lateMarkerRepo 'AGENTS.md') -Value @(
+        '<!-- new-project-setup:v4:start -->',
+        'legacy agents block',
+        '<!-- new-project-setup:v4:end -->'
+    )
+    Set-Content -LiteralPath (Join-Path $lateMarkerRepo '.gitignore') -Value @(
+        '# new-project-setup:v4:start',
+        'unterminated ignore block'
+    )
+    $lateAgentsBefore = Get-Content -Raw -LiteralPath (Join-Path $lateMarkerRepo 'AGENTS.md')
+    Assert-True ((Invoke-ApplyChild $lateMarkerRepo) -ne 0) 'Late malformed markers were accepted.'
+    Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $lateMarkerRepo 'AGENTS.md')) -eq $lateAgentsBefore) 'Marker preflight failed after partially migrating AGENTS.md.'
+
+    $invalidStateRepo = Join-Path $testRoot 'invalid-state'
+    Initialize-TestRepo $invalidStateRepo
+    New-Item -ItemType Directory -Force -Path (Join-Path $invalidStateRepo '.codex') | Out-Null
+    Set-Content -LiteralPath (Join-Path $invalidStateRepo '.codex\new-project-setup.json') -Value '{invalid-json'
+    Assert-True ((Invoke-ApplyChild $invalidStateRepo) -ne 0) 'Invalid workflow state was overwritten.'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $invalidStateRepo 'AGENTS.md'))) 'Invalid state failure occurred after partial managed writes.'
+
+    $redirectRepo = Join-Path $testRoot 'redirected-target'
+    $redirectOutside = Join-Path $testRoot 'redirected-outside'
+    Initialize-TestRepo $redirectRepo
+    New-Item -ItemType Directory -Force -Path $redirectOutside | Out-Null
+    New-Item -ItemType Junction -Path (Join-Path $redirectRepo 'docs') -Target $redirectOutside | Out-Null
+    Assert-True ((Invoke-ApplyChild $redirectRepo) -ne 0) 'Redirected managed directory was accepted.'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $redirectOutside 'development-log.md'))) 'Apply escaped the resolved target through a junction.'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $redirectRepo 'AGENTS.md'))) 'Redirect failure occurred after partial managed writes.'
+
+    $rootTarget = Join-Path $testRoot 'redirected-root-target'
+    $rootLink = Join-Path $testRoot 'redirected-root-link'
+    Initialize-TestRepo $rootTarget
+    New-Item -ItemType Junction -Path $rootLink -Target $rootTarget | Out-Null
+    Assert-True ((Invoke-ApplyChild $rootLink) -ne 0) 'Redirected project root was accepted.'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $rootTarget 'AGENTS.md'))) 'Root-link refusal occurred after managed writes.'
+
+    $customHelperRepo = Join-Path $testRoot 'custom-helper-collision'
+    Initialize-TestRepo $customHelperRepo
+    New-Item -ItemType Directory -Force -Path (Join-Path $customHelperRepo 'scripts') | Out-Null
+    $customHelperPath = Join-Path $customHelperRepo 'scripts\github-sync.ps1'
+    Set-Content -LiteralPath $customHelperPath -Value 'Write-Host "project-owned helper"'
+    $customHelperBefore = Get-Content -Raw -LiteralPath $customHelperPath
+    Assert-True ((Invoke-ApplyChild $customHelperRepo) -ne 0) 'Unowned existing helper was overwritten.'
+    Assert-True ((Get-Content -Raw -LiteralPath $customHelperPath) -eq $customHelperBefore) 'Helper collision changed the project-owned script.'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $customHelperRepo 'AGENTS.md'))) 'Helper collision occurred after partial managed writes.'
+
+    $legacyHelperRepo = Join-Path $testRoot 'legacy-helper-migration'
+    Initialize-TestRepo $legacyHelperRepo
+    New-Item -ItemType Directory -Force -Path (Join-Path $legacyHelperRepo 'scripts') | Out-Null
+    $legacyHelpers = [ordered]@{
+        'github-sync.ps1' = 'A45C8209D821F4B2A4CF4628F7D72D2CA993C3B7F76F2E58D6BF6B5F7AADDEEE'
+        'github-backup.ps1' = 'C66D2E0D35950309D4ED0FAF774FFC07C50BEB8637FFA5BC456A373415DFAA50'
+    }
+    foreach ($entry in $legacyHelpers.GetEnumerator()) {
+        $sourcePath = Join-Path $projectRoot "scripts\$($entry.Key)"
+        $targetPath = Join-Path $legacyHelperRepo "scripts\$($entry.Key)"
+        $bytes = [IO.File]::ReadAllBytes($sourcePath)
+        $lineEnd = [Array]::IndexOf($bytes, [byte]10)
+        Assert-True ($lineEnd -gt 0) "Managed helper marker line is missing: $($entry.Key)"
+        $legacyBytes = New-Object byte[] ($bytes.Length - $lineEnd - 1)
+        [Array]::Copy($bytes, $lineEnd + 1, $legacyBytes, 0, $legacyBytes.Length)
+        [IO.File]::WriteAllBytes($targetPath, $legacyBytes)
+        Assert-True ((Get-FileHash -Algorithm SHA256 $targetPath).Hash -eq $entry.Value) "Legacy helper fixture hash changed: $($entry.Key)"
+    }
+    Assert-True ((Invoke-ApplyChild $legacyHelperRepo) -eq 0) 'Known legacy helpers did not migrate.'
+    foreach ($name in $legacyHelpers.Keys) {
+        Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $legacyHelperRepo "scripts\$name")).Contains('# new-project-setup:managed-helper:v1')) "Managed helper marker missing after migration: $name"
+    }
+
+    $sourceLikeRepo = Join-Path $testRoot 'source-authority'
+    Initialize-TestRepo $sourceLikeRepo
+    New-Item -ItemType Directory -Force -Path (Join-Path $sourceLikeRepo 'scripts') | Out-Null
+    Set-Content -LiteralPath (Join-Path $sourceLikeRepo 'scripts\sync-installed-skill.ps1') -Value 'source sentinel'
+    Set-Content -LiteralPath (Join-Path $sourceLikeRepo 'AGENTS.md') -Value 'authoritative guidance'
+    Assert-True ((Invoke-ApplyChild $sourceLikeRepo) -ne 0) 'Installed-style apply was allowed to overwrite a partial source project.'
+    Assert-True ((Get-Content -Raw -LiteralPath (Join-Path $sourceLikeRepo 'AGENTS.md')).Trim() -eq 'authoritative guidance') 'Source-authority refusal modified source guidance.'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $sourceLikeRepo '.codex\new-project-setup.json'))) 'Source-authority refusal modified workflow state.'
 
     $migrationRepo = Join-Path $testRoot 'migration-v2'
     New-Item -ItemType Directory -Force -Path (Join-Path $migrationRepo 'docs') | Out-Null
@@ -135,7 +290,7 @@ try {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $applyScript -ProjectRoot $migrationRepo *> $null
     Assert-True ($LASTEXITCODE -eq 0) 'Version-2 migration failed.'
     $migratedAgents = Get-Content -Raw -LiteralPath (Join-Path $migrationRepo 'AGENTS.md')
-    Assert-True ($migratedAgents.Contains('new-project-setup:v4:start') -and -not $migratedAgents.Contains('new-project-setup:v2:start')) 'Version-2 marker was not migrated.'
+    Assert-True ($migratedAgents.Contains('new-project-setup:v5:start') -and -not $migratedAgents.Contains('new-project-setup:v2:start')) 'Version-2 marker was not migrated.'
     Assert-True $migratedAgents.Contains('Preserve this project rule') 'Version-2 migration removed project-specific guidance.'
     Assert-True (Test-Path -LiteralPath (Join-Path $migrationRepo 'docs\work-log.md')) 'Version-2 migration removed the legacy work log.'
 
@@ -154,11 +309,55 @@ try {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $applyScript -ProjectRoot $migrationV3Repo *> $null
     Assert-True ($LASTEXITCODE -eq 0) 'Version-3 migration failed.'
     $migratedV3Agents = Get-Content -Raw -LiteralPath (Join-Path $migrationV3Repo 'AGENTS.md')
-    Assert-True ($migratedV3Agents.Contains('new-project-setup:v4:start') -and -not $migratedV3Agents.Contains('new-project-setup:v3:start')) 'Version-3 marker was not migrated.'
+    Assert-True ($migratedV3Agents.Contains('new-project-setup:v5:start') -and -not $migratedV3Agents.Contains('new-project-setup:v3:start')) 'Version-3 marker was not migrated.'
     Assert-True $migratedV3Agents.Contains('Preserve this version-3 project rule') 'Version-3 migration removed project-specific guidance.'
     $migratedV3State = Get-Content -Raw -LiteralPath (Join-Path $migrationV3Repo '.codex\new-project-setup.json') | ConvertFrom-Json
-    Assert-True ([int]$migratedV3State.workflow_version -eq 4) 'Version-3 state was not upgraded.'
+    Assert-True ([int]$migratedV3State.workflow_version -eq 5) 'Version-3 state was not upgraded.'
     Assert-True ($migratedV3State.repository -eq 'owner/existing' -and $migratedV3State.remote -eq 'github') 'Version-3 migration lost repository state.'
+
+    $migrationV4Repo = Join-Path $testRoot 'migration-v4'
+    New-Item -ItemType Directory -Force -Path (Join-Path $migrationV4Repo '.codex') | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $migrationV4Repo 'docs') | Out-Null
+    Set-Content -LiteralPath (Join-Path $migrationV4Repo 'AGENTS.md') -Value @(
+        '# Existing version-4 guidance',
+        '',
+        '<!-- new-project-setup:v4:start -->',
+        'legacy version-4 managed text',
+        '<!-- new-project-setup:v4:end -->',
+        '',
+        '- Preserve this version-4 project rule.'
+    )
+    Set-Content -LiteralPath (Join-Path $migrationV4Repo '.gitignore') -Value @(
+        'project-private/',
+        '# new-project-setup:v4:start',
+        'legacy-ignore',
+        '# new-project-setup:v4:end'
+    )
+    Set-Content -LiteralPath (Join-Path $migrationV4Repo '.gitattributes') -Value @(
+        '*.fixture binary',
+        '# new-project-setup:v4:start',
+        'legacy-attributes',
+        '# new-project-setup:v4:end'
+    )
+    Set-Content -LiteralPath (Join-Path $migrationV4Repo 'docs\development-log.md') -Value '# Existing Development Log'
+    Set-Content -LiteralPath (Join-Path $migrationV4Repo 'docs\codex-handoff.md') -Value '# Existing Codex Handoff'
+    Set-Content -LiteralPath (Join-Path $migrationV4Repo '.codex\new-project-setup.json') -Value '{"format":2,"workflow_version":4,"repository":"owner/v4","remote":"github","execution_mode":"adaptive"}'
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $applyScript -ProjectRoot $migrationV4Repo *> $null
+    Assert-True ($LASTEXITCODE -eq 0) 'Version-4 migration failed.'
+    $migratedV4Agents = Get-Content -Raw -LiteralPath (Join-Path $migrationV4Repo 'AGENTS.md')
+    Assert-True ($migratedV4Agents.Contains('new-project-setup:v5:start') -and -not $migratedV4Agents.Contains('new-project-setup:v4:start')) 'Version-4 marker was not migrated.'
+    Assert-True $migratedV4Agents.Contains('Preserve this version-4 project rule') 'Version-4 migration removed project-specific guidance.'
+    $migratedV4Ignore = Get-Content -Raw -LiteralPath (Join-Path $migrationV4Repo '.gitignore')
+    Assert-True ($migratedV4Ignore.Contains('project-private/') -and $migratedV4Ignore.Contains('new-project-setup:v5:start') -and -not $migratedV4Ignore.Contains('new-project-setup:v4:start')) 'Version-4 migration damaged ignore policy.'
+    $migratedV4Attributes = Get-Content -Raw -LiteralPath (Join-Path $migrationV4Repo '.gitattributes')
+    Assert-True ($migratedV4Attributes.Contains('*.fixture binary') -and $migratedV4Attributes.Contains('new-project-setup:v5:start') -and -not $migratedV4Attributes.Contains('new-project-setup:v4:start')) 'Version-4 migration damaged attributes policy.'
+    Assert-True ((Get-Content -Raw (Join-Path $migrationV4Repo 'docs\development-log.md')) -match 'Existing Development Log') 'Version-4 migration replaced development memory.'
+    Assert-True ((Get-Content -Raw (Join-Path $migrationV4Repo 'docs\codex-handoff.md')) -match 'Existing Codex Handoff') 'Version-4 migration replaced handoff state.'
+    $migratedV4State = Get-Content -Raw -LiteralPath (Join-Path $migrationV4Repo '.codex\new-project-setup.json') | ConvertFrom-Json
+    Assert-True ([int]$migratedV4State.workflow_version -eq 5) 'Version-4 state was not upgraded.'
+    Assert-True ($migratedV4State.repository -eq 'owner/v4' -and $migratedV4State.remote -eq 'github') 'Version-4 migration lost repository state.'
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $applyScript -ProjectRoot $migrationV4Repo -Check *> $null
+    Assert-True ($LASTEXITCODE -eq 0) 'Version-4 migration is not idempotent after upgrade.'
 
     $initializeRepo = Join-Path $testRoot 'initialize-github'
     $initializeRemote = Join-Path $testRoot 'initialize-github.git'
@@ -376,6 +575,14 @@ try {
     try { & $syncScript *> $null }
     finally { $env:CODEX_HOME = $oldCodexHome }
     Assert-True (-not (Test-Path -LiteralPath $stalePath)) 'Exact sync retained stale installed payload.'
+    $installedFixture = Join-Path $tempCodex 'skills\new-project-setup'
+    foreach ($reference in @('install-and-migration.md', 'execution-and-memory.md', 'github-history.md')) {
+        Assert-True (Test-Path -LiteralPath (Join-Path $installedFixture "references\$reference")) "Installed payload omitted conditional reference: $reference"
+    }
+    Assert-True (@(Get-ChildItem -LiteralPath $installedFixture -File -Recurse).Count -eq 10) 'Installed runtime payload inventory is not exact.'
+
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $behaviorScript *> $null
+    Assert-True ($LASTEXITCODE -eq 0) 'Behavior contract evaluation failed.'
 
     Write-Host 'All new-project-setup regression tests passed.'
 }
