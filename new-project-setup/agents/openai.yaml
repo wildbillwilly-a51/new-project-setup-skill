@@ -1,0 +1,7 @@
+interface:
+  display_name: "New Project Setup"
+  short_description: "Set up new durable apps and projects with lasting memory"
+  default_prompt: "Use $new-project-setup when creating a new durable app or project, or when explicitly installing or syncing its workflow. Do not invoke it for ordinary work inside an existing project."
+
+policy:
+  allow_implicit_invocation: true

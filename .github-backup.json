@@ -1,0 +1,9 @@
+{
+  "allow_findings": [
+    {
+      "rule": "machine-user-path",
+      "path": "new-project-setup/scripts/github-backup.ps1",
+      "sha256": "656D14AF3990746429E60ABA19C9A7F09B9FBFA9080240FEC76660AA1EE94D23"
+    }
+  ]
+}

@@ -12,6 +12,10 @@ Resolve exactly one target in this order:
 3. Current repository when unambiguous.
 4. Ask which single project is intended.
 
+An ordinary request to create or build a new durable app activates setup when
+it needs a new project. Ordinary implementation, fixes, review, or continuation
+inside an existing project does not. A bare skill invocation still runs setup.
+
 Never update sibling roots in bulk. This source project uses maintenance mode:
 run its source `scripts/apply-project-setup.ps1`, validate source changes, then
 synchronize the installed runtime. Never run an older installed apply helper
@@ -63,11 +67,11 @@ installed-runtime attempt to overwrite the authoritative skill source. It
 preflights all managed paths, markers, state, and helper ownership before its
 first write; an unrelated script at a helper path is preserved and blocks setup.
 
-## Version-5 Migration
+## Version-6 Migration
 
-Version 5 creates or refreshes:
+Version 6 creates or refreshes:
 
-- managed v5 blocks in `AGENTS.md`, `.gitignore`, and `.gitattributes`
+- managed v6 blocks in `AGENTS.md`, `.gitignore`, and `.gitattributes`
 - public-ready `docs/development-log.md`, `docs/codex-handoff.md`, and
   `CHANGELOG.md` when absent
 - both GitHub helpers
@@ -76,7 +80,7 @@ Version 5 creates or refreshes:
   risk-based validation, evidence reuse, convergence strategy, and
   proportional documentation
 
-When migrating v2, v3, or v4:
+When migrating v2, v3, v4, or v5:
 
 - replace only the prior managed blocks
 - preserve project-specific instructions outside markers
@@ -87,3 +91,7 @@ When migrating v2, v3, or v4:
 
 If old history blocks audit, follow `github-history.md`; do not weaken policy to
 make migration pass.
+
+Setup completion uses the single completion/evidence invariant in
+`execution-and-memory.md`; migration does not define a weaker evidence unit or
+terminal condition.

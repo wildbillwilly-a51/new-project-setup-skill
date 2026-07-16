@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-16
+
+- Released workflow version 6 with authentic version-2 through version-5
+  migration fixtures, transactional apply/sync/back-sync, rollback retention,
+  cross-process locks, and future-version refusal.
+- Added complete commit metadata and pathname scanning, immutable-SHA audits,
+  canonical GitHub identity and all-URL checks, exact branch pushes, containment
+  checks, and source-race refusal.
+- Unified distinct-risk completion evidence, progress-aware convergence,
+  deployment confirmation and waiver behavior, and progressively loaded context.
+- Published the exact ten-file installable payload under `new-project-setup/`
+  and updated installation guidance to that directory.
+
 ## 2026-07-15
 
 - Introduced workflow version 5 with progressive context loading, independently

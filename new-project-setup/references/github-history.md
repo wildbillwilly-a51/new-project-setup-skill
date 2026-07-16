@@ -3,6 +3,11 @@
 Read this reference only for GitHub initialization, audit, divergence,
 synchronization, or sanitized fallback.
 
+GitHub work uses the single completion/evidence invariant in
+`execution-and-memory.md`. Audit, destination visibility, and fast-forward
+status are distinct protected-boundary evidence; this reference does not define
+an alternate completion rule.
+
 ## Normal Source-History Synchronization
 
 `scripts/github-sync.ps1` is the normal off-site workflow. It pushes meaningful

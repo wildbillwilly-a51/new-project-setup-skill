@@ -6,7 +6,7 @@ scripts and loads a conditional reference only when an exception requires it.
 
 ## Reference Routing
 
-- Prerequisites, initialization, target inspection, and v2-v5 migration:
+- Prerequisites, initialization, target inspection, and v2-v6 migration:
   `install-and-migration.md`
 - Adaptive effort, progressive context, durable memory, convergence, and
   protected boundaries: `execution-and-memory.md`
@@ -16,7 +16,8 @@ scripts and loads a conditional reference only when an exception requires it.
 ## Behavior Contract
 
 - A bare invocation runs install/sync; a question changes nothing.
-- Implicit activation is limited to creating or initializing a durable project.
+- Implicit activation includes ordinary creation of a new durable app or
+  project, but excludes ordinary work inside an existing project.
 - Exactly one target is resolved; sibling projects remain untouched.
 - Source maintenance synchronizes the installed runtime; target use does not
   modify the source skill. Source maintenance runs the source helper first and
@@ -25,13 +26,22 @@ scripts and loads a conditional reference only when an exception requires it.
 - Clear bounded work continues without routine user questions.
 - Useful exploration is promoted; lasting work is never silently demoted.
 - Progressive context expands automatically when evidence requires it.
-- Validation addresses distinct risks, reuses valid evidence, changes strategy
-  when loops stop converging, runs at most one broad final matrix, and then
-  retests only failed or invalidated cells.
+- The completion/evidence invariant requires every acceptance criterion to
+  pass, distinct evidence for every material risk or protected boundary, no
+  unresolved high-risk failure, and current durable records. Code-path
+  variation alone is equivalent evidence.
+- Validation reuses valid evidence, changes strategy when loops make no
+  material progress, runs at most one broad final matrix, and then retests only
+  failed or invalidated cells. An unresolved stop requires both no material
+  progress and no credible bounded probe.
 - Every lasting revision is preserved; development memory remains proportional
   and public-ready.
 - Protected boundaries, private visibility, source-history audit, and
   fast-forward-only synchronization remain mandatory.
+- Deployment requires confirmation immediately before the action unless the
+  current request explicitly names the deployment target and effect and waives
+  that additional checkpoint; that explicit waiver is the confirmation. A
+  request that merely asks for deployment is not a waiver.
 - Audit failure preserves the local commit and requires an explicit fallback or
   local-only choice; history is never rewritten automatically.
 
@@ -40,7 +50,7 @@ scripts and loads a conditional reference only when an exception requires it.
 Before treating setup or synchronization as complete, verify:
 
 - prerequisites and Git identity are ready or clearly reported pending
-- the version-5 apply helper is idempotent in `-Check` mode
+- the version-6 apply helper is idempotent in `-Check` mode
 - managed markers are unique and complete, and managed paths do not cross
   reparse points outside the resolved target
 - preflight completes before mutation, and existing helper scripts are updated
@@ -51,8 +61,10 @@ Before treating setup or synchronization as complete, verify:
 - workflow state records progressive context, adaptive effort, risk-based
   validation, evidence reuse, strategy change on non-convergence, and
   proportional documentation
+- policy surfaces use the same risk or protected boundary evidence unit and the
+  same no-progress/no-bounded-probe terminal rule
 - bounded scenarios require no routine questions and protected scenarios still
-  require authorization
+  require authorization unless an explicit deployment waiver supplies it
 - helper scripts parse and the automated regression/evaluation suites pass
 - full source-history audit passes or reports only the exact safe blocker
 - any GitHub destination remains private and fast-forward-only

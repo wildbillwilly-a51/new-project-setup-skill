@@ -77,11 +77,15 @@ Before implementation, identify internally:
 
 Keep this as a compact working ledger, not a new user approval step. Establish
 the initial distinct-risk set before broad validation and bound it to requested
-acceptance criteria plus materially different code paths. Add only a direct
-dependency or shared cause discovered inside that boundary and record why.
-Report unrelated defects separately instead of expanding scope. Another
-equivalent screenshot, data value, viewport, theme, or view using the same code
-path does not count as new evidence.
+acceptance criteria, material risks, and protected boundaries. Add only a
+direct dependency or shared cause discovered inside that boundary and record
+why. Report unrelated defects separately instead of expanding scope.
+
+Evidence is distinct only when it covers a materially different risk or
+protected boundary. A different code path, screenshot, data value, viewport,
+theme, or view alone does not make evidence distinct. Several code paths may
+support one risk claim, while one code path may require separate evidence for
+different risks or protected boundaries.
 
 Batch related failures and diagnose likely shared causes before patching. After
 a change, retest invalidated areas first. Once targeted evidence passes, run one
@@ -90,19 +94,29 @@ change may require only one direct check. If it fails, preserve passing evidence
 and return to targeted diagnosis. Retest only failed or invalidated cells
 afterward; do not create a new candidate to justify another broad matrix.
 
-If two equivalent repair/review cycles fail to reduce unresolved distinct
-failures, change diagnostic strategy: inspect a different layer, use a more
-deterministic probe, or revisit the shared cause. If two strategy changes also
-fail to reduce unresolved risks, isolate a minimal reproducer. If two materially
-different root-cause attempts on that reproducer still fail, preserve the
-diagnostics, mark an unresolved local blocker, stop broad work, and do not claim
-completion. External-state, credential, or protected-action blockers are
-reported normally. Do not repeat the loop or ask for a routine transition.
+If two equivalent repair/review cycles make no material progress, change
+diagnostic strategy: inspect a different layer, use a more deterministic probe,
+or revisit the shared cause. If two strategy changes still make no material
+progress, isolate a minimal reproducer. These thresholds force a strategy
+change; they are not terminal attempt limits.
 
-Finish when acceptance criteria pass, each material changed risk has evidence,
-no unresolved high-risk failure remains, durable records are current, and
-further checks would duplicate valid evidence. Never skip distinct safety or
-release risks merely to reduce token use.
+Material progress means resolving or narrowing a remaining criterion, risk, or
+boundary with new valid evidence. A credible bounded probe is a finite check or
+root-cause attempt inside the requested risk boundary with a reasonable chance
+of producing that progress. Continue while either material progress is being
+made or such a probe remains. When neither remains, preserve diagnostics, mark
+an unresolved local blocker, stop broad work, and do not claim completion.
+External-state, credential, and protected-action blockers are reported normally.
+
+Use one completion/evidence invariant: claim completion only when every
+acceptance criterion passes, every material risk or protected boundary has
+distinct evidence, no unresolved high-risk failure remains, and durable records
+are current. Evidence is distinct only when it covers a materially different
+risk or protected boundary; code-path variation alone is equivalent evidence.
+If completion cannot be reached, stop unresolved only when the latest strategy
+made no material progress and no credible bounded probe remains. Preserve
+diagnostics and report the blocker. Never skip distinct safety or release risks
+to reduce token use.
 
 ## Durable Memory
 
@@ -139,12 +153,13 @@ consequential licensing changes; existing/shared/production data changes;
 destructive operations; material product-direction expansion; unrelated
 conflicting work; or unsafe state.
 
-Protected boundaries override authority implied by the objective. Obtain a
-separate confirmation immediately before deployment even when the objective
-names deployment. An explicit instruction that also says to proceed without
-another deployment checkpoint is the confirmation; other protected actions
-still require authorization. One immediate confirmation may authorize several
-protected effects only when it explicitly identifies all of them.
+Protected boundaries override authority implied by the objective. Deployment
+requires confirmation immediately before the action unless the current request
+explicitly names the deployment target and effect and waives that additional
+checkpoint; that explicit waiver is the confirmation. A request that merely
+asks for deployment is not a waiver. Other protected actions still require
+authorization. One confirmation may cover several protected effects only when
+it explicitly identifies all of them.
 
 A bounded local build authorizes architecture, implementation, established
 project-local dependencies, tests, generated files, demo data, and schemas or
