@@ -1,4 +1,4 @@
-# New Project Setup for Codex
+﻿# New Project Setup for Codex
 
 `new-project-setup` is a Codex skill for durable, low-intervention project work.
 It lets Codex handle routine implementation, validation, project memory, local
@@ -41,7 +41,7 @@ Install the new-project-setup skill globally for this Codex installation from
 that GitHub path.
 ```
 
-The `new-project-setup/` directory is the exact ten-file installable payload.
+The `new-project-setup/` directory is the exact twelve-file installable payload.
 Restart Codex if the installed skill is not recognized immediately.
 
 ## Use

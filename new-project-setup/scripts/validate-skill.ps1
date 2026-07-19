@@ -1,20 +1,27 @@
+#requires -Version 5.1
+
 [CmdletBinding()]
 param([string]$SkillRoot)
 
 $ErrorActionPreference = "Stop"
+if ($PSVersionTable.PSEdition -eq 'Core' -and $PSVersionTable.PSVersion.Major -lt 7) {
+    throw 'PowerShell 7 or Windows PowerShell 5.1 is required.'
+}
 $effectiveSkillRoot = if ($SkillRoot) { $SkillRoot } else { Split-Path -Parent $PSScriptRoot }
 $root = (Resolve-Path -LiteralPath $effectiveSkillRoot).Path
 $required = @(
     'SKILL.md',
-    'agents\openai.yaml',
-    'references\new-project-setup-checklist.md',
-    'references\install-and-migration.md',
-    'references\execution-and-memory.md',
-    'references\github-history.md',
-    'scripts\apply-project-setup.ps1',
-    'scripts\github-backup.ps1',
-    'scripts\github-sync.ps1',
-    'scripts\validate-skill.ps1'
+    'agents/openai.yaml',
+    'references/new-project-setup-checklist.md',
+    'references/install-and-migration.md',
+    'references/execution-and-memory.md',
+    'references/github-history.md',
+    'scripts/apply-project-setup.ps1',
+    'scripts/github-backup.ps1',
+    'scripts/github-sync.ps1',
+    'scripts/invoke-powershell.ps1',
+    'scripts/invoke-powershell.sh',
+    'scripts/validate-skill.ps1'
 )
 
 foreach ($relative in $required) {
@@ -24,7 +31,7 @@ foreach ($relative in $required) {
 }
 
 $skillPath = Join-Path $root 'SKILL.md'
-$agentPath = Join-Path $root 'agents\openai.yaml'
+$agentPath = Join-Path $root 'agents/openai.yaml'
 $skill = Get-Content -Raw -LiteralPath $skillPath
 $yaml = Get-Content -Raw -LiteralPath $agentPath
 if ($skill -notmatch '(?s)^---\r?\nname: new-project-setup\r?\ndescription: [^\r\n]+\r?\n---\r?\n') {
@@ -47,17 +54,19 @@ if ($yaml -notmatch '(?m)^\s+allow_implicit_invocation: true\s*$') { throw "New-
 # PyYAML is a release-validation dependency only. The target apply helper does
 # not call this script and therefore does not acquire a Python dependency.
 $pythonCandidates = New-Object Collections.Generic.List[object]
-$pythonCommand = Get-Command python -ErrorAction SilentlyContinue
-if ($pythonCommand) {
-    $pythonCandidates.Add([pscustomobject]@{ Executable = $pythonCommand.Source; Prefix = @() })
+foreach ($name in @('python3', 'python')) {
+    $pythonCommand = Get-Command $name -ErrorAction SilentlyContinue
+    if ($pythonCommand -and -not @($pythonCandidates | Where-Object Executable -eq $pythonCommand.Source).Count) {
+        $pythonCandidates.Add([pscustomobject]@{ Executable = $pythonCommand.Source; Prefix = @() })
+    }
 }
-$pyCommand = Get-Command py -ErrorAction SilentlyContinue
-if ($pyCommand) {
+$pyCommand = if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) { Get-Command py -ErrorAction SilentlyContinue } else { $null }
+if ($pyCommand -and -not @($pythonCandidates | Where-Object Executable -eq $pyCommand.Source).Count) {
     $pythonCandidates.Add([pscustomobject]@{ Executable = $pyCommand.Source; Prefix = @('-3') })
 }
 $pythonRuntime = $null
 foreach ($candidate in $pythonCandidates) {
-    $probeArgs = @($candidate.Prefix) + @('-c', 'import yaml')
+    $probeArgs = @($candidate.Prefix) + @('-c', 'import sys, yaml; raise SystemExit(0 if sys.version_info.major == 3 else 1)')
     try {
         & $candidate.Executable @probeArgs *> $null
         if ($LASTEXITCODE -eq 0) {
@@ -201,24 +210,50 @@ if (($semanticOutput -join "`n") -notmatch 'semantic-yaml-ok mutations=4') {
     throw "Semantic YAML validation did not report all mutation checks."
 }
 
-$checklist = Get-Content -Raw -LiteralPath (Join-Path $root 'references\new-project-setup-checklist.md')
-$installText = Get-Content -Raw -LiteralPath (Join-Path $root 'references\install-and-migration.md')
-$executionText = Get-Content -Raw -LiteralPath (Join-Path $root 'references\execution-and-memory.md')
-$historyText = Get-Content -Raw -LiteralPath (Join-Path $root 'references\github-history.md')
+$checklist = Get-Content -Raw -LiteralPath (Join-Path $root 'references/new-project-setup-checklist.md')
+$installText = Get-Content -Raw -LiteralPath (Join-Path $root 'references/install-and-migration.md')
+$executionText = Get-Content -Raw -LiteralPath (Join-Path $root 'references/execution-and-memory.md')
+$historyText = Get-Content -Raw -LiteralPath (Join-Path $root 'references/github-history.md')
 if ($checklist -notmatch '(?m)^## Reference Routing\s*$') { throw "Completion checklist must route conditional references." }
 
-foreach ($relative in @('scripts\apply-project-setup.ps1', 'scripts\github-backup.ps1', 'scripts\github-sync.ps1', 'scripts\validate-skill.ps1')) {
+foreach ($relative in @(
+    'scripts/apply-project-setup.ps1',
+    'scripts/github-backup.ps1',
+    'scripts/github-sync.ps1',
+    'scripts/invoke-powershell.ps1',
+    'scripts/validate-skill.ps1'
+)) {
     $tokens = $null
     $errors = $null
-    [Management.Automation.Language.Parser]::ParseFile((Join-Path $root $relative), [ref]$tokens, [ref]$errors) | Out-Null
+    $scriptPath = Join-Path $root $relative
+    [Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$tokens, [ref]$errors) | Out-Null
     if ($errors.Count) { throw "$relative parse failure: $($errors.Message -join '; ')" }
+    if (@([IO.File]::ReadAllBytes($scriptPath) | Where-Object { $_ -gt 127 }).Count -gt 0) {
+        throw "$relative must remain ASCII-compatible UTF-8 without BOM for Windows PowerShell 5.1 and PowerShell 7."
+    }
 }
 
-$apply = Get-Content -Raw -LiteralPath (Join-Path $root 'scripts\apply-project-setup.ps1')
+$psLauncher = Get-Content -Raw -LiteralPath (Join-Path $root 'scripts/invoke-powershell.ps1')
+$shLauncher = Get-Content -Raw -LiteralPath (Join-Path $root 'scripts/invoke-powershell.sh')
+if ($psLauncher -notmatch 'Get-Command\s+\$name' -or $psLauncher -notmatch "'pwsh\.exe', 'pwsh'" -or
+    $psLauncher -notmatch 'powershell\.exe' -or
+    $psLauncher -notmatch 'PSVersionTable\.PSVersion\.Major -ge 7' -or
+    $psLauncher -notmatch 'UseShellExecute\s*=\s*\$false' -or
+    $psLauncher -notmatch 'ConvertTo-WindowsCommandLineArgument' -or
+    $psLauncher -match '%\*') {
+    throw 'PowerShell launcher must prefer PowerShell 7, retain the Windows fallback, and avoid cmd.exe argument replay.'
+}
+if ($shLauncher -notmatch 'command -v pwsh' -or $shLauncher -notmatch 'PSVersionTable\.PSVersion\.Major -ge 7' -or
+    $shLauncher -match '(?im)^\s*powershell(?:\.exe)?\b') {
+    throw 'POSIX launcher must require PowerShell 7 without a Windows PowerShell fallback.'
+}
+
+$apply = Get-Content -Raw -LiteralPath (Join-Path $root 'scripts/apply-project-setup.ps1')
 foreach ($marker in @(
     'WorkflowVersion = 6', 'new-project-setup:v6:start',
-    'docs\development-log.md', 'docs\codex-handoff.md',
-    'source_authority', 'target_path_policy', 'managed_marker_policy',
+    'docs/development-log.md', 'docs/codex-handoff.md',
+    'source_authority', 'automation_runtime', 'platform_support',
+    'path_comparison', 'text_eol', 'target_path_policy', 'managed_marker_policy',
     'apply_preflight', 'operation_lock', 'input_immutability',
     'apply_transaction', 'helper_ownership', 'managed_helpers',
     'execution_mode', 'durability_ambiguity_action',
@@ -228,6 +263,12 @@ foreach ($marker in @(
     'handoff_presence', 'handoff_refresh', 'handoff_evidence',
     'handoff_sync_reference', 'context_loading',
     'effort_classification', 'validation_strategy', 'risk_set',
+    'precommit_audit', 'precommit_attestation',
+    'normal_history_audit', 'public_readiness_audit',
+    'sync_cadence', 'focused_sync_commit_threshold',
+    'focused_sync_time_trigger', 'source_history_recovery',
+    'legacy_history_preservation', 'recovery_destination',
+    'recovery_retry',
     'evidence_reuse', 'evidence_definition', 'convergence_action',
     'convergence_escalation', 'final_validation_matrix',
     'final_validation_scope', 'unresolved_local_failure',
@@ -291,6 +332,7 @@ $invariants = [ordered]@{
     'consultation does not edit' = 'consultation-only.*authorizes no edits'
     'single target isolation' = 'Never update an accessible sibling project'
     'source and target maintenance are separated' = 'In another\s+project,.*do not modify this source or\s+runtime'
+    'runtime selection is automatic and stack neutral' = 'PowerShell-first.*without choosing an application\s+stack.*Prefer PowerShell 7.*Windows\s+PowerShell 5\.1 on Windows.*user\s+should not need to select a runtime'
     'durability and risk remain independent' = 'durability, operational risk, and effort independently'
     'routine work does not prompt' = 'without routine implementation or\s+validation questions'
     'quick does not mean disposable' = 'Quick.*prototype.*MVP.*do not mean disposable'
@@ -303,17 +345,46 @@ $invariants = [ordered]@{
     'terminal stop requires no progress and no probe' = 'stop unresolved only when.*no material progress.*no credible bounded probe'
     'deployment waiver is immediate and explicit' = 'Deployment requires confirmation immediately.*waives.*explicit waiver is the confirmation.*merely asks for deployment is not a waiver'
     'source history remains private and fast-forward only' = 'private.*fast-forward push'
-    'isolated fallback remains explicit' = 'ask whether to use the.*fallback or remain local-only'
+    'staged snapshot is audited before commit' = 'PreCommit.*CommitMessage.*exact (?:audited )?staged tree'
+    'focused changes batch at ten commits' = 'one through nine.*local commits.*tenth.*synchronizes'
+    'focused batching has no time trigger' = 'no time trigger'
+    'material and requested sync remains immediate' = 'initial setup.*standard or\s+substantial.*milestones.*releases.*explicit sync.*immediate'
+    'normal history audit uses verified remote boundary' = 'verified (?:private remote|destination) tip.*current snapshot.*every.*commit|current snapshot.*every commit after.*verified private remote tip'
+    'public readiness retains full ancestry' = 'public-readiness.*full ancestry|full ancestry.*public-readiness'
+    'legacy recovery is explicit and preserves history' = '(?:explicit|authorized).*clean-baseline recovery.*local hidden refs|clean-baseline recovery.*explicit.*local hidden refs'
+    'isolated fallback remains explicit' = 'ask (?:whether )?(?:to use|to run|for).*fallback.*remain local-only|fallback or local-only.*explicit'
+    'fallback does not alter normal remote' = 'fallback.*(?:never|must not).*(?:modify|disable|replace).*normal.*remote'
 }
 foreach ($entry in $invariants.GetEnumerator()) {
     if ($policyText -notmatch ('(?is)' + $entry.Value)) { throw "Behavior invariant missing: $($entry.Key)" }
 }
 
-$sync = Get-Content -Raw -LiteralPath (Join-Path $root 'scripts\github-sync.ps1')
-foreach ($marker in @('AuditSourceHistory', 'Initialize', 'PublicReadiness', 'PRIVATE', 'merge-base', 'Source HEAD or branch changed')) {
+$sync = Get-Content -Raw -LiteralPath (Join-Path $root 'scripts/github-sync.ps1')
+foreach ($marker in @(
+    'AuditSourceHistory', 'Initialize', 'PublicReadiness', 'PRIVATE',
+    'merge-base', 'Source HEAD or branch changed', 'PreCommit',
+    'CommitMessage', 'BatchEligible', 'HistoryBaseCommit',
+    'FullSourceHistory',
+    'RecoverLegacyAncestry', 'ExpectedLegacyHead',
+    'private-source-strict-public-readiness',
+    'refs/codex/legacy-history', '10'
+)) {
     if ($sync -notmatch [Regex]::Escape($marker)) { throw "GitHub sync helper is missing safety marker: $marker" }
 }
-foreach ($relative in @('scripts\github-sync.ps1', 'scripts\github-backup.ps1')) {
+$backup = Get-Content -Raw -LiteralPath (Join-Path $root 'scripts/github-backup.ps1')
+foreach ($marker in @('CandidateCommit', 'HistoryBaseCommit', 'FullSourceHistory')) {
+    if ($backup -notmatch [Regex]::Escape($marker)) { throw "GitHub backup helper is missing audit marker: $marker" }
+}
+foreach ($marker in @('PrivateSourceSync', 'operational-metadata', 'Get-LineNumberForIndex')) {
+    if ($backup -notmatch [Regex]::Escape($marker)) { throw "GitHub backup helper is missing private-source audit marker: $marker" }
+}
+if ($sync -notmatch 'PrivateSourceSync') { throw 'GitHub sync helper must use private-source audit mode for normal synchronization.' }
+foreach ($auditScript in @($sync, $backup)) {
+    if ($auditScript -match 'FileAttributes\]::ReparsePoint') {
+        throw 'Audit helpers must distinguish actual link targets from nonredirecting cloud reparse metadata.'
+    }
+}
+foreach ($relative in @('scripts/github-sync.ps1', 'scripts/github-backup.ps1')) {
     if ((Get-Content -Raw -LiteralPath (Join-Path $root $relative)) -notmatch '(?m)^# new-project-setup:managed-helper:v1$') {
         throw "Managed helper ownership marker is missing: $relative"
     }

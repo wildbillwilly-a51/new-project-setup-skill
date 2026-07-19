@@ -136,6 +136,20 @@ important conclusions before compacting verbose context. Keep credentials,
 regulated data, machine paths, internal endpoints, and private operations in
 ignored `*.local.md` or approved secret storage.
 
+Before every lasting Codex commit, stage only scoped work and audit the exact
+staged tree and intended public-ready message through the precommit mode in
+`github-history.md`; then commit them immediately without substitution. A
+missing or mismatched attestation cannot qualify for deferred transfer and
+fails safe to immediate normal audit and synchronization.
+
+Focused small changes may accumulate locally through the verified ten-commit
+cadence: one through nine local commits may defer the private push, and the
+tenth synchronizes all. There is no time trigger. Initial setup, standard or
+substantial work, milestones, releases, explicit sync requests, absent or empty
+destinations, and uncertainty synchronize immediately. This cadence changes
+only off-site timing; it never weakens local preservation, evidence, audit, or
+completion requirements.
+
 Refresh the handoff when the objective changes, a work package completes, work
 blocks, an intentional handoff occurs, or commit/synchronization state changes.
 Summarize valid evidence, invalidated evidence, and remaining validation at

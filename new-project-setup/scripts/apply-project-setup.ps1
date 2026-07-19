@@ -1,3 +1,5 @@
+#requires -Version 5.1
+
 [CmdletBinding()]
 param(
     [string]$ProjectRoot = ".",
@@ -7,8 +9,17 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if ($PSVersionTable.PSEdition -eq 'Core' -and $PSVersionTable.PSVersion.Major -lt 7) {
+    throw 'PowerShell 7 or Windows PowerShell 5.1 is required.'
+}
 $WorkflowVersion = 6
 $StateFormat = 2
+$IsWindowsPlatform = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
+$PathComparison = if ($IsWindowsPlatform) {
+    [StringComparison]::OrdinalIgnoreCase
+} else {
+    [StringComparison]::Ordinal
+}
 $resolvedRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $skillRoot = Split-Path -Parent $PSScriptRoot
 $changes = New-Object Collections.Generic.List[string]
@@ -37,13 +48,36 @@ $testFaultPoints = @(
     'apply-before-final-validation'
 )
 
+function Get-NormalizedFullPath {
+    param([string]$Path)
+    $full = [IO.Path]::GetFullPath($Path)
+    $root = [IO.Path]::GetPathRoot($full)
+    if ($full.Length -gt $root.Length) {
+        $full = $full.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    }
+    return $full
+}
+
+function Get-DescendantPathPrefix {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $normalized = Get-NormalizedFullPath $Path
+    $separator = [string][IO.Path]::DirectorySeparatorChar
+    $alternate = [string][IO.Path]::AltDirectorySeparatorChar
+    if ($normalized.EndsWith($separator) -or $normalized.EndsWith($alternate)) { return $normalized }
+    return $normalized + $separator
+}
+
 function Test-SamePath {
     param([string]$Left, [string]$Right)
-    return [string]::Equals(
-        [IO.Path]::GetFullPath($Left).TrimEnd('\', '/'),
-        [IO.Path]::GetFullPath($Right).TrimEnd('\', '/'),
-        [StringComparison]::OrdinalIgnoreCase
-    )
+    $leftFull = Get-NormalizedFullPath $Left
+    $rightFull = Get-NormalizedFullPath $Right
+    if ([string]::Equals($leftFull, $rightFull, $PathComparison)) { return $true }
+    if (-not $IsWindowsPlatform -and (Test-Path -LiteralPath $leftFull) -and (Test-Path -LiteralPath $rightFull)) {
+        $testCommand = if (Test-Path -LiteralPath '/usr/bin/test' -PathType Leaf) { '/usr/bin/test' } else { '/bin/test' }
+        & $testCommand $leftFull '-ef' $rightFull
+        return $LASTEXITCODE -eq 0
+    }
+    return $false
 }
 
 function Test-RedirectedLink {
@@ -69,36 +103,78 @@ function Get-StringSha256 {
     }
 }
 
+function Test-ExistingPathsSameIdentity {
+    param([string]$Left, [string]$Right)
+    if ($IsWindowsPlatform) { return [string]::Equals($Left, $Right, [StringComparison]::OrdinalIgnoreCase) }
+    $testCommand = if (Test-Path -LiteralPath '/usr/bin/test' -PathType Leaf) { '/usr/bin/test' } else { '/bin/test' }
+    & $testCommand $Left '-ef' $Right
+    return $LASTEXITCODE -eq 0
+}
+
+function Test-FileSystemCaseInsensitive {
+    param([string]$Path)
+    $probe = Get-NormalizedFullPath $Path
+    while (-not (Test-Path -LiteralPath $probe)) {
+        $parent = Split-Path -Parent $probe
+        if ([string]::IsNullOrWhiteSpace($parent) -or $parent -ceq $probe) { return $false }
+        $probe = $parent
+    }
+    for ($index = $probe.Length - 1; $index -ge 0; $index--) {
+        $character = $probe[$index]
+        if (-not [char]::IsLetter($character)) { continue }
+        $replacement = if ([char]::IsUpper($character)) { [char]::ToLowerInvariant($character) } else { [char]::ToUpperInvariant($character) }
+        $variant = $probe.Substring(0, $index) + $replacement + $probe.Substring($index + 1)
+        return (Test-Path -LiteralPath $variant) -and (Test-ExistingPathsSameIdentity $probe $variant)
+    }
+    return $false
+}
+
+function Get-OperationLockPath {
+    param([string]$Path)
+    $userProfile = if (-not $IsWindowsPlatform -and -not [string]::IsNullOrWhiteSpace([string]$env:HOME)) {
+        [string]$env:HOME
+    } else {
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    }
+    if ([string]::IsNullOrWhiteSpace($userProfile)) { throw 'Unable to resolve the current user for workflow locking.' }
+    $userKey = (Get-StringSha256 ((Get-NormalizedFullPath $userProfile).ToUpperInvariant())).Substring(0, 16)
+    $lockRoot = Join-Path ([IO.Path]::GetTempPath()) "codex-new-project-setup-locks-$userKey"
+    New-Item -ItemType Directory -Force -Path $lockRoot | Out-Null
+    $lockRootItem = Get-Item -Force -LiteralPath $lockRoot
+    if (-not $lockRootItem.PSIsContainer -or (Test-RedirectedLink $lockRootItem)) { throw 'Workflow lock root is not a safe directory.' }
+    $identity = Get-NormalizedFullPath $Path
+    if ($IsWindowsPlatform -or (Test-FileSystemCaseInsensitive $identity)) { $identity = $identity.ToUpperInvariant() }
+    return Join-Path $lockRoot ((Get-StringSha256 $identity) + '.lock')
+}
+
 function Enter-OperationLocks {
     param([string[]]$Paths)
 
     $locks = New-Object Collections.Generic.List[object]
-    $names = @($Paths | ForEach-Object {
-        $normalized = [IO.Path]::GetFullPath($_).TrimEnd('\', '/').ToUpperInvariant()
-        'Local\new-project-setup-' + (Get-StringSha256 $normalized)
-    } | Sort-Object -Unique)
+    $lockPaths = @($Paths | ForEach-Object { Get-OperationLockPath $_ } | Sort-Object -Unique)
 
     try {
-        foreach ($name in $names) {
-            $mutex = New-Object Threading.Mutex($false, $name)
-            $acquired = $false
-            try {
-                $acquired = $mutex.WaitOne(30000)
+        foreach ($lockPath in $lockPaths) {
+            $deadline = [DateTime]::UtcNow.AddSeconds(30)
+            $stream = $null
+            while ($null -eq $stream -and [DateTime]::UtcNow -lt $deadline) {
+                try {
+                    $stream = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+                } catch [IO.IOException] {
+                    Start-Sleep -Milliseconds 100
+                }
             }
-            catch [Threading.AbandonedMutexException] {
-                $acquired = $true
+            if ($null -eq $stream) { throw "Timed out waiting for workflow operation lock: $lockPath" }
+            if (Test-RedirectedLink (Get-Item -Force -LiteralPath $lockPath)) {
+                $stream.Dispose()
+                throw "Workflow operation lock is redirected: $lockPath"
             }
-            if (-not $acquired) {
-                $mutex.Dispose()
-                throw "Timed out waiting for workflow operation lock: $name"
-            }
-            $locks.Add($mutex)
+            $locks.Add($stream)
         }
         return $locks.ToArray()
     }
     catch {
         for ($index = $locks.Count - 1; $index -ge 0; $index--) {
-            try { $locks[$index].ReleaseMutex() } catch {}
             $locks[$index].Dispose()
         }
         throw
@@ -109,7 +185,7 @@ function Exit-OperationLocks {
     param([object[]]$Locks)
 
     for ($index = $Locks.Count - 1; $index -ge 0; $index--) {
-        try { $Locks[$index].ReleaseMutex() } finally { $Locks[$index].Dispose() }
+        $Locks[$index].Dispose()
     }
 }
 
@@ -133,11 +209,11 @@ function Invoke-TestFault {
 function Assert-TargetPath {
     param([string]$Path)
 
-    $rootPath = [IO.Path]::GetFullPath($resolvedRoot).TrimEnd('\', '/')
-    $fullPath = [IO.Path]::GetFullPath($Path)
-    $rootPrefix = $rootPath + [IO.Path]::DirectorySeparatorChar
+    $rootPath = Get-NormalizedFullPath $resolvedRoot
+    $fullPath = Get-NormalizedFullPath $Path
+    $rootPrefix = Get-DescendantPathPrefix $rootPath
     if (-not (Test-SamePath $rootPath $fullPath) -and
-        -not $fullPath.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        -not $fullPath.StartsWith($rootPrefix, $PathComparison)) {
         throw "Managed path escapes the resolved project root: $Path"
     }
 
@@ -263,9 +339,15 @@ function Test-StateOwnsManagedHelper {
 
     $managedHelpers = Get-StateProperty $State 'managed_helpers'
     if ($null -eq $managedHelpers) { return $false }
-    $hashProperty = $managedHelpers.PSObject.Properties[$RelativePath]
-    return $null -ne $hashProperty -and
-        [string]::Equals([string]$hashProperty.Value, $Hash, [StringComparison]::OrdinalIgnoreCase)
+    $pathKeys = @($RelativePath, $RelativePath.Replace('/', '\'), $RelativePath.Replace('\', '/')) | Select-Object -Unique
+    foreach ($pathKey in $pathKeys) {
+        $hashProperty = $managedHelpers.PSObject.Properties[$pathKey]
+        if ($null -ne $hashProperty -and
+            [string]::Equals([string]$hashProperty.Value, $Hash, [StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+    return $false
 }
 
 function Assert-ManagedHelperOwnership {
@@ -349,9 +431,9 @@ function Remove-SafeStageRoot {
     param([string]$Path)
 
     if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) { return }
-    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/')
-    $fullPath = [IO.Path]::GetFullPath($Path)
-    if (-not $fullPath.StartsWith($tempRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
+    $tempRoot = Get-NormalizedFullPath ([IO.Path]::GetTempPath())
+    $fullPath = Get-NormalizedFullPath $Path
+    if (-not $fullPath.StartsWith((Get-DescendantPathPrefix $tempRoot), $PathComparison) -or
         -not ([IO.Path]::GetFileName($fullPath).StartsWith('new-project-setup-apply-stage-', [StringComparison]::Ordinal))) {
         throw "Refusing to remove unexpected apply staging path: $Path"
     }
@@ -522,7 +604,7 @@ function Assert-ApplyPayload {
         }
     }
 
-    $statePath = Join-Path $Root '.codex\new-project-setup.json'
+    $statePath = Join-Path $Root '.codex/new-project-setup.json'
     $state = Read-WorkflowState $statePath
     if ($null -eq $state -or [int](Get-StateProperty $state 'format') -ne $StateFormat -or
         [int](Get-StateProperty $state 'workflow_version') -ne $WorkflowVersion -or
@@ -530,7 +612,7 @@ function Assert-ApplyPayload {
         throw "Staged workflow state is not the exact v${WorkflowVersion} format."
     }
 
-    foreach ($relative in @('scripts\github-sync.ps1', 'scripts\github-backup.ps1')) {
+    foreach ($relative in @('scripts/github-sync.ps1', 'scripts/github-backup.ps1')) {
         $path = Join-Path $Root $relative
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
             throw "Staged managed helper is missing: $relative"
@@ -549,7 +631,7 @@ function Assert-ApplyPayload {
         if ($errors.Count) { throw "Staged managed helper parse failure for ${relative}: $($errors.Message -join '; ')" }
     }
 
-    foreach ($relative in @('docs\development-log.md', 'docs\codex-handoff.md', 'CHANGELOG.md')) {
+    foreach ($relative in @('docs/development-log.md', 'docs/codex-handoff.md', 'CHANGELOG.md')) {
         if (-not (Test-Path -LiteralPath (Join-Path $Root $relative) -PathType Leaf)) {
             throw "Staged project memory file is missing: $relative"
         }
@@ -566,10 +648,10 @@ $operationLocks = @(Enter-OperationLocks @($resolvedRoot, $skillRoot))
 $stageRoot = $null
 $scriptExitCode = 0
 try {
-$syncInstalledSentinel = Join-Path $resolvedRoot 'scripts\sync-installed-skill.ps1'
-$syncFromInstalledSentinel = Join-Path $resolvedRoot 'scripts\sync-from-installed-skill.ps1'
+$syncInstalledSentinel = Join-Path $resolvedRoot 'scripts/sync-installed-skill.ps1'
+$syncFromInstalledSentinel = Join-Path $resolvedRoot 'scripts/sync-from-installed-skill.ps1'
 $skillSentinel = Join-Path $resolvedRoot 'SKILL.md'
-$testSentinel = Join-Path $resolvedRoot 'tests\run-tests.ps1'
+$testSentinel = Join-Path $resolvedRoot 'tests/run-tests.ps1'
 $isSourceProject =
     (Test-Path -LiteralPath $syncInstalledSentinel -PathType Leaf) -or
     (Test-Path -LiteralPath $syncFromInstalledSentinel -PathType Leaf) -or
@@ -582,12 +664,12 @@ foreach ($relativePath in @(
     'AGENTS.md',
     '.gitignore',
     '.gitattributes',
-    'docs\development-log.md',
-    'docs\codex-handoff.md',
+    'docs/development-log.md',
+    'docs/codex-handoff.md',
     'CHANGELOG.md',
-    '.codex\new-project-setup.json',
-    'scripts\github-sync.ps1',
-    'scripts\github-backup.ps1'
+    '.codex/new-project-setup.json',
+    'scripts/github-sync.ps1',
+    'scripts/github-backup.ps1'
 )) {
     Assert-TargetPath (Join-Path $resolvedRoot $relativePath) | Out-Null
 }
@@ -652,10 +734,32 @@ private details in ignored `*.local.md` and recheck branch, HEAD, and scope.
 Prepare the final handoff before its containing commit and record sync relative
 to it; a matching push needs no bookkeeping-only commit.
 
-After a safe commit, run `scripts/github-sync.ps1` for a complete audit and
-private fast-forward push. Never force-push or change visibility. If blocked,
-keep the commit and ask whether to use isolated `scripts/github-backup.ps1` or
-remain local-only.
+Before every lasting commit, stage only the scoped files and run
+`scripts/github-sync.ps1 -PreCommit -CommitMessage '<exact message>'`. Commit
+that exact audited staged tree and public-ready message immediately. Missing or
+mismatched audit evidence fails safe to immediate synchronization.
+
+After a focused small-change commit, run `scripts/github-sync.ps1
+-BatchEligible`: one through nine verified local commits may remain local, and
+the tenth synchronizes the complete batch. There is no time trigger. Initial
+setup, standard or substantial work, milestones, releases, explicit sync
+requests, and absent remote branches synchronize immediately with the normal
+command. Normal private sync audits the current snapshot and every commit after
+the verified private remote tip, using private-source rules that block
+high-confidence secrets and unsafe Git objects without treating operational
+metadata as a push blocker. Exact findings inherited unchanged from that tip
+are already transferred; changed, re-added, or new findings block. Empty
+remotes use the same private-source rules across full ancestry.
+Public-readiness and isolated fallback use stricter public-metadata review.
+Never force-push or change visibility.
+
+Existing unsafe ancestry already transferred to the exact private destination
+is not a reason to use fallback. For local-only legacy ancestry and an empty
+destination, offer the guarded one-time clean-baseline recovery only with
+explicit approval; it preserves the old history in local hidden refs and never
+force-pushes. Otherwise keep the commit and ask whether to use isolated
+`scripts/github-backup.ps1` or remain local-only. Fallback never modifies the
+normal source remote.
 
 ### Autonomous local work
 
@@ -693,7 +797,7 @@ playwright-report/
 
 $attributesBody = @'
 * text=auto
-*.ps1 text eol=crlf
+*.ps1 text eol=lf
 *.cmd text eol=crlf
 *.bat text eol=crlf
 *.sh text eol=lf
@@ -713,9 +817,9 @@ foreach ($managed in $managedFiles) {
 }
 $sourceHelper = Join-Path $PSScriptRoot 'github-backup.ps1'
 $sourceSync = Join-Path $PSScriptRoot 'github-sync.ps1'
-$targetHelper = Assert-TargetPath (Join-Path $resolvedRoot 'scripts\github-backup.ps1')
-$targetSync = Assert-TargetPath (Join-Path $resolvedRoot 'scripts\github-sync.ps1')
-$statePath = Assert-TargetPath (Join-Path $resolvedRoot '.codex\new-project-setup.json')
+$targetHelper = Assert-TargetPath (Join-Path $resolvedRoot 'scripts/github-backup.ps1')
+$targetSync = Assert-TargetPath (Join-Path $resolvedRoot 'scripts/github-sync.ps1')
+$statePath = Assert-TargetPath (Join-Path $resolvedRoot '.codex/new-project-setup.json')
 
 foreach ($sourcePath in @($sourceSync, $sourceHelper)) {
     if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
@@ -754,13 +858,13 @@ if ($null -ne $existingState -and $distinctMarkerVersions.Count -gt 0 -and
     throw "Managed marker version does not match workflow state version: $statePath"
 }
 
-Assert-ManagedHelperOwnership $targetSync $sourceSync 'github-sync.ps1' 'scripts\github-sync.ps1' $existingState
-Assert-ManagedHelperOwnership $targetHelper $sourceHelper 'github-backup.ps1' 'scripts\github-backup.ps1' $existingState
+Assert-ManagedHelperOwnership $targetSync $sourceSync 'github-sync.ps1' 'scripts/github-sync.ps1' $existingState
+Assert-ManagedHelperOwnership $targetHelper $sourceHelper 'github-backup.ps1' 'scripts/github-backup.ps1' $existingState
 
 $memoryDefaults = [ordered]@{
-    'docs\development-log.md' = "# Development Log`r`n`r`nKeep entries public-ready: completed work, decisions and rationale, useful failed approaches, validation, and durable lessons.`r`n"
-    'CHANGELOG.md' = "# Changelog`r`n"
-    'docs\codex-handoff.md' = "# Codex Handoff`r`n`r`n- Current objective: Complete project setup.`r`n- Current state: Managed workflow files are installed; project validation, commit, and GitHub synchronization remain.`r`n- Next action: Validate setup, then commit and synchronize it.`r`n- Blockers: None known.`r`n- Important decisions: GitHub history is private but public-ready.`r`n- Branch/commit/sync: Pending verification and completion.`r`n- Validation complete: Deterministic managed-payload application.`r`n- Validation remaining: Project checks, scoped commit, and GitHub result.`r`n"
+    'docs/development-log.md' = "# Development Log`n`nKeep entries public-ready: completed work, decisions and rationale, useful failed approaches, validation, and durable lessons.`n"
+    'CHANGELOG.md' = "# Changelog`n"
+    'docs/codex-handoff.md' = "# Codex Handoff`n`n- Current objective: Complete project setup.`n- Current state: Managed workflow files are installed; project validation, commit, and GitHub synchronization remain.`n- Next action: Validate setup, then commit and synchronize it.`n- Blockers: None known.`n- Important decisions: GitHub history is private; public-readiness uses stricter audit.`n- Branch/commit/sync: Pending verification and completion.`n- Validation complete: Deterministic managed-payload application.`n- Validation remaining: Project checks, scoped commit, and GitHub result.`n"
 }
 foreach ($relative in $memoryDefaults.Keys) {
     $memoryPath = Assert-TargetPath (Join-Path $resolvedRoot $relative)
@@ -770,8 +874,8 @@ foreach ($relative in $memoryDefaults.Keys) {
 }
 
 $sourceInputs = [ordered]@{
-    'scripts\github-sync.ps1' = $sourceSync
-    'scripts\github-backup.ps1' = $sourceHelper
+    'scripts/github-sync.ps1' = $sourceSync
+    'scripts/github-backup.ps1' = $sourceHelper
 }
 $sourceSnapshots = @{}
 $expectedHelperHashes = @{}
@@ -782,9 +886,9 @@ foreach ($relative in $sourceInputs.Keys) {
 
 $targetPaths = [ordered]@{}
 foreach ($managed in $managedFiles) { $targetPaths[$managed.Relative] = $managed.Path }
-$targetPaths['.codex\new-project-setup.json'] = $statePath
-$targetPaths['scripts\github-sync.ps1'] = $targetSync
-$targetPaths['scripts\github-backup.ps1'] = $targetHelper
+$targetPaths['.codex/new-project-setup.json'] = $statePath
+$targetPaths['scripts/github-sync.ps1'] = $targetSync
+$targetPaths['scripts/github-backup.ps1'] = $targetHelper
 foreach ($relative in $memoryDefaults.Keys) {
     $targetPaths[$relative] = Assert-TargetPath (Join-Path $resolvedRoot $relative)
 }
@@ -798,23 +902,38 @@ $effectiveRemote = if ($RemoteName) { $RemoteName } elseif (Get-StateProperty $e
 $stateContent = ([ordered]@{
     format = $StateFormat
     workflow_version = $WorkflowVersion
-    github_mode = 'private-public-ready'
+    github_mode = 'private-source-strict-public-readiness'
     repository = $effectiveRepository
     remote = $effectiveRemote
     source_authority = 'source-first'
+    automation_runtime = 'pwsh-preferred-windows-powershell-fallback'
+    platform_support = 'windows-macos-linux'
+    path_comparison = 'filesystem-aware-existing-paths'
+    text_eol = 'lf'
     target_path_policy = 'contained-no-reparse'
     managed_marker_policy = 'unique-fail-closed'
     apply_preflight = 'locked-stage-validate-immutable-before-write'
-    operation_lock = 'path-keyed-named-mutex'
+    operation_lock = 'path-keyed-cross-session-file-lock'
     input_immutability = 'sha256-recheck'
     apply_transaction = 'atomic-file-replace-with-retained-rollback'
     helper_ownership = $managedHelperOwnershipPolicy
     managed_helpers = [ordered]@{
-        'scripts\github-sync.ps1' = $expectedHelperHashes['scripts\github-sync.ps1']
-        'scripts\github-backup.ps1' = $expectedHelperHashes['scripts\github-backup.ps1']
+        'scripts/github-sync.ps1' = $expectedHelperHashes['scripts/github-sync.ps1']
+        'scripts/github-backup.ps1' = $expectedHelperHashes['scripts/github-backup.ps1']
     }
     source_history_sync = $true
-    audit_failure_action = 'ask'
+    precommit_audit = 'exact-index-candidate-and-metadata'
+    precommit_attestation = 'local-fail-safe'
+    normal_history_audit = 'verified-private-remote-boundary-plus-local-delta'
+    public_readiness_audit = 'full-ancestry'
+    sync_cadence = 'focused-batched-standard-immediate'
+    focused_sync_commit_threshold = 10
+    focused_sync_time_trigger = 'none'
+    source_history_recovery = 'explicit-one-time-clean-root'
+    legacy_history_preservation = 'local-hidden-ref'
+    recovery_destination = 'private-absent-branch'
+    recovery_retry = 'normal-sync-only'
+    audit_failure_action = 'classify-recover-or-ask-fallback'
     development_log = $true
     codex_handoff = 'always'
     handoff_presence = 'required'
@@ -874,14 +993,14 @@ foreach ($managed in $managedFiles) {
     if ($stageParent) { New-Item -ItemType Directory -Force -Path $stageParent | Out-Null }
     $current = if (Test-Path -LiteralPath $managed.Path -PathType Leaf) { Get-Content -Raw -LiteralPath $managed.Path } else { '' }
     $existingMarker = Get-ExistingManagedMarker $current $managed.AllMarkers $managed.Path
-    $replacement = $managed.NewStart + "`r`n" + $managed.Body + "`r`n" + $managed.NewEnd
+    $replacement = $managed.NewStart + "`n" + $managed.Body + "`n" + $managed.NewEnd
     if ($null -ne $existingMarker) {
         $oldPattern = '(?s)' + [Regex]::Escape([string]$existingMarker.Start) + '.*?' + [Regex]::Escape([string]$existingMarker.End)
         $next = [Regex]::Replace($current, $oldPattern, $replacement)
     } elseif ($current.Trim()) {
-        $next = $current.TrimEnd() + "`r`n`r`n" + $replacement + "`r`n"
+        $next = $current.TrimEnd() + "`n`n" + $replacement + "`n"
     } else {
-        $next = $replacement + "`r`n"
+        $next = $replacement + "`n"
     }
     if ((Test-Path -LiteralPath $managed.Path -PathType Leaf) -and
         $current.Replace("`r`n", "`n") -eq $next.Replace("`r`n", "`n")) {
@@ -892,10 +1011,10 @@ foreach ($managed in $managedFiles) {
     & $addEntry $managed.Relative
 }
 
-$stagedState = Join-Path $stageRoot '.codex\new-project-setup.json'
+$stagedState = Join-Path $stageRoot '.codex/new-project-setup.json'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $stagedState) | Out-Null
-Write-Utf8NoBom $stagedState ($stateContent + "`r`n")
-& $addEntry '.codex\new-project-setup.json'
+Write-Utf8NoBom $stagedState ($stateContent + "`n")
+& $addEntry '.codex/new-project-setup.json'
 
 foreach ($relative in $sourceInputs.Keys) {
     $stagePath = Join-Path $stageRoot $relative

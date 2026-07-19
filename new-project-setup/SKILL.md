@@ -43,27 +43,46 @@ needed for an exception or interpretation:
 Expand relevant context when evidence requires it; do not make context growth
 or validation transitions into routine user checkpoints.
 
+## Automation Runtime
+
+Keep workflow automation PowerShell-first without choosing an application
+stack. Prefer PowerShell 7 everywhere; retain Windows PowerShell 5.1 on Windows.
+Use the bundled platform launcher; the user should not need to select a runtime
+or remember syntax. Detect a missing runtime and ask before installing it.
+
 ## Install Or Sync
 
 1. Resolve one target. For a new project, create its directory and initialize
    Git through `install-and-migration.md`; record root, branch, committed
    `HEAD`, status, remotes, setup state, handoff, and dirty work.
-2. For a normal target, run the invoked installed
-   `scripts/apply-project-setup.ps1 -ProjectRoot <target>`. In this source, run
-   the source helper, validate it, then sync runtime. Never apply an older
+2. For a normal target, invoke the installed `apply-project-setup.ps1` through
+   the current PowerShell host or bundled platform launcher. In this source,
+   run the source helper, validate it, then sync runtime. Never apply an older
    installed helper over source.
 3. Preserve guidance outside managed markers, memory, history, and unrelated
    work. Recheck branch, `HEAD`, and scope before staging or committing; stop
    for overlapping concurrent changes or unsafe state.
-4. When no GitHub destination is recorded, initialize a private repository
-   with `scripts/github-sync.ps1 -Initialize`, then commit recorded state.
-5. Validate proportionally, commit only scoped lasting changes, and run
-   `scripts/github-sync.ps1` against committed `HEAD`.
-6. If source audit blocks, keep the local commit and ask whether to use the
-   isolated sanitized fallback or remain local-only. Never rewrite history,
-   force-push, expose matched values, or change visibility automatically.
-7. In this source project, synchronize the installed skill, validate it, and
-   hash-check exact payload parity before the source commit.
+4. Initialize a missing private destination with `github-sync.ps1 -Initialize`
+   and include its state in the next commit.
+5. Before each lasting Codex commit, stage only scoped changes and run
+   `github-sync.ps1 -PreCommit -CommitMessage '<exact message>'`; immediately
+   commit that exact tree and message. Missing or mismatched attestation fails
+   safe to immediate synchronization.
+6. After focused small work, run `github-sync.ps1 -BatchEligible`: defer one
+   through nine verified local commits and sync all on the tenth, with no time
+   trigger. Setup, broader work, milestones, releases, explicit requests,
+   absent branches, and uncertainty sync immediately.
+7. Normal private sync audits after the fetched verified destination tip;
+   empty destinations audit full ancestry with private-source rules that block
+   high-confidence secrets and unsafe Git objects without treating operational
+   metadata as a push blocker. Public-readiness and isolated fallback use
+   stricter public-metadata review. Use only the explicitly guarded
+   clean-baseline recovery for qualifying local-only legacy ancestry. Otherwise
+   ask for isolated fallback or local-only. Never force push, expose matched
+   values, or change visibility. Follow
+   `github-history.md` for the complete rules.
+8. In this source, sync and validate the installed skill and exact payload
+   parity before the source commit.
 
 ## Adaptive Execution
 

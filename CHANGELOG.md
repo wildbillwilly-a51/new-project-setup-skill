@@ -1,5 +1,15 @@
-# Changelog
+﻿# Changelog
 
+## 2026-07-19
+
+- Published the updated twelve-file workflow version 6 payload, including the
+  cross-platform PowerShell launchers.
+- Split normal private GitHub source synchronization from strict
+  public-readiness review so private pushes no longer block on operational
+  metadata, while strict public and sanitized-backup audits still review it.
+- Tightened credential-assignment scanning, allowed standard Tailscale
+  constants, added line numbers to local audit findings, and kept known token
+  formats blocked.
 ## 2026-07-16
 
 - Released workflow version 6 with authentic version-2 through version-5
@@ -35,9 +45,9 @@
   and exploratory work treatment that does not require remembered trigger
   phrases and does not treat `quick`, `prototype`, or `MVP` as disposable by
   default.
-- Authorized routine isolated local application construction—including
+- Authorized routine isolated local application constructionâ€”including
   established project-local dependencies and new empty local database
-  schemas—while retaining approval boundaries for live, security-sensitive,
+  schemasâ€”while retaining approval boundaries for live, security-sensitive,
   destructive, global, or production-impacting work.
 - Made development memory proportional to future value, added automatic
   promotion of useful exploration, and added deterministic version-3 migration

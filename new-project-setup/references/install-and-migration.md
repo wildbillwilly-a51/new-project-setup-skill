@@ -25,10 +25,15 @@ modifying the source or runtime skill.
 Inspect only what setup needs:
 
 - Git root, identity, status, branch, `HEAD`, remotes, and upstream
-- PowerShell, `tar`, GitHub CLI, and `gh auth status`
+- PowerShell 7 (`pwsh`) or Windows PowerShell 5.1 on Windows, plus `tar`, GitHub
+  CLI, and `gh auth status`
 - cloud-synchronized path warnings
 - managed markers and `.codex/new-project-setup.json`
 - concise handoff, directly relevant setup files, and overlapping dirty work
+
+Target-project setup has no Python dependency. Source maintenance and release
+validation additionally require Python 3 with PyYAML for metadata validation;
+detect them automatically and ask before any global/native installation.
 
 Do not load broad project history, dependency trees, generated output, or old
 logs unless an observed exception requires them.
@@ -40,22 +45,41 @@ machine-level Git identity change, run the approved command, recheck, and
 continue. Established project-local dependencies for a bounded objective are
 not prerequisite installation and need no routine checkpoint.
 
+Prefer `pwsh` on Windows, macOS, and Linux. Fall back to `powershell.exe` only
+on Windows. When the current shell is not PowerShell, use
+`scripts/invoke-powershell.ps1` from PowerShell on Windows or
+`sh scripts/invoke-powershell.sh` on macOS/Linux. These launchers select the
+runtime; never make the user remember the platform-specific command. If no
+supported runtime exists, ask before installing PowerShell 7.
+
 After resolving one new-project path, create that directory when absent; do not
 create speculative alternatives. Initialize Git only when absent. Establish
 ignore and line-ending rules before staging. Warn when the Git root is in
 OneDrive or another synchronized folder; GitHub, not folder synchronization, is
 repository transport.
 
-Before each scoped commit, record branch, `HEAD`, and intended paths. Recheck
-immediately before staging and committing. Stop only for overlapping concurrent
-changes or unsafe state; never stage unrelated work.
+Before each scoped lasting commit, record branch, `HEAD`, and intended paths.
+Recheck immediately before staging, stage only those paths, and run the exact
+staged-tree and commit-message precommit audit described in
+`github-history.md`. Commit that tree and message immediately. Stop only for
+overlapping concurrent changes or unsafe state; never stage unrelated work.
 
 ## Apply Or Synchronize
 
-For a normal target, run the helper from the invoked installed skill:
+For a normal target, run the helper from the invoked installed skill. From an
+existing supported PowerShell host (PowerShell 7 on any platform, or Windows
+PowerShell 5.1 on Windows):
 
 ```powershell
 & <installed-skill>\scripts\apply-project-setup.ps1 -ProjectRoot <project>
+```
+
+When runtime selection is needed, pass that helper to the platform launcher:
+
+```text
+Windows PowerShell: & "<installed-skill>\scripts\invoke-powershell.ps1" "<installed-skill>\scripts\apply-project-setup.ps1" -ProjectRoot "<project>"
+Windows non-PowerShell shell: powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "<installed-skill>\scripts\invoke-powershell.ps1" "<installed-skill>\scripts\apply-project-setup.ps1" -ProjectRoot "<project>"
+macOS/Linux: sh "<installed-skill>/scripts/invoke-powershell.sh" "<installed-skill>/scripts/apply-project-setup.ps1" -ProjectRoot "<project>"
 ```
 
 Pass `-Repository owner/name` and `-RemoteName <name>` when known. Use `-Check`
@@ -79,18 +103,25 @@ Version 6 creates or refreshes:
   history, adaptive execution, progressive context, adaptive effort,
   risk-based validation, evidence reuse, convergence strategy, and
   proportional documentation
+- exact staged-tree precommit auditing, verified-private-remote history
+  boundaries, ten-commit focused-work batching, and guarded legacy recovery
 
 When migrating v2, v3, v4, or v5:
 
 - replace only the prior managed blocks
 - preserve project-specific instructions outside markers
 - preserve repository/remote state, existing memory, legacy files, and history
-- never delete, untrack, sanitize, amend, or rewrite prior history
+- never delete, untrack, sanitize, amend, or rewrite prior history during normal
+  migration; the separate clean-baseline recovery requires explicit
+  authorization and preserves the old exact tip in local hidden refs
 - summarize legacy knowledge only after reviewing it for public readiness
-- audit all ancestry before normal source-history synchronization
+- audit full ancestry for an absent destination with private-source rules and
+  for public-readiness assessment with strict public-metadata rules; an existing
+  exact private destination uses its verified tip as the boundary
 
-If old history blocks audit, follow `github-history.md`; do not weaken policy to
-make migration pass.
+If old history still blocks an empty destination on high-confidence secret or
+unsafe Git findings, follow the guarded recovery or explicit fallback choices
+in `github-history.md`; do not weaken policy to make migration pass.
 
 Setup completion uses the single completion/evidence invariant in
 `execution-and-memory.md`; migration does not define a weaker evidence unit or
