@@ -1,0 +1,326 @@
+{
+  "format": 1,
+  "active_workflow_version": 7,
+  "allowed_transitions": [
+    {
+      "from": 6,
+      "to": 6
+    },
+    {
+      "from": 6,
+      "to": 7
+    },
+    {
+      "from": 7,
+      "to": 7
+    }
+  ],
+  "payloads": [
+    {
+      "workflow_version": 6,
+      "state": "predecessor",
+      "runtime": {
+        "executable": "pwsh",
+        "minimum_version": "7.0.0",
+        "fallback_policy": "windows-powershell-5.1-on-windows",
+        "fallback_executable": "powershell.exe",
+        "fallback_minimum_version": "5.1"
+      },
+      "hash_policy": {
+        "algorithm": "sha256",
+        "mechanism": "declared-source-and-owned-hashes"
+      },
+      "required_paths": [
+        {
+          "path": "SKILL.md",
+          "source_hash": "63486a030b5792e84f5011a39e00860047e81e9794d900e18f1401357fc11797",
+          "owned_hashes": [
+            "63486a030b5792e84f5011a39e00860047e81e9794d900e18f1401357fc11797"
+          ]
+        },
+        {
+          "path": "agents/openai.yaml",
+          "source_hash": "8bc8f642fc92e4e0f4ab52f8c048702432e653bd72d5a632d9e129a375c16158",
+          "owned_hashes": [
+            "8bc8f642fc92e4e0f4ab52f8c048702432e653bd72d5a632d9e129a375c16158"
+          ]
+        },
+        {
+          "path": "references/new-project-setup-checklist.md",
+          "source_hash": "7ee03f5d0614b9b183fb61ee062f0b958202f8e9694d294b19cc00371a96a77d",
+          "owned_hashes": [
+            "7ee03f5d0614b9b183fb61ee062f0b958202f8e9694d294b19cc00371a96a77d"
+          ]
+        },
+        {
+          "path": "references/install-and-migration.md",
+          "source_hash": "fe933164e0b2994b801a95dad5d2f589c623ec061ae6461bc54a685e81840d2e",
+          "owned_hashes": [
+            "fe933164e0b2994b801a95dad5d2f589c623ec061ae6461bc54a685e81840d2e"
+          ]
+        },
+        {
+          "path": "references/execution-and-memory.md",
+          "source_hash": "33dc541a40d51d4b310c35c9b40c8b6d0ac9df99e543da49c7b988b12fc6561f",
+          "owned_hashes": [
+            "33dc541a40d51d4b310c35c9b40c8b6d0ac9df99e543da49c7b988b12fc6561f"
+          ]
+        },
+        {
+          "path": "references/github-history.md",
+          "source_hash": "39d3d5b08f30386c97b819970136a7cafde01a34533606b2b7356cad5203066d",
+          "owned_hashes": [
+            "39d3d5b08f30386c97b819970136a7cafde01a34533606b2b7356cad5203066d"
+          ]
+        },
+        {
+          "path": "scripts/apply-project-setup.ps1",
+          "source_hash": "bee4d78f0cc9342851275d4f23d802cb34c6942987a6fb94c01e3bd0b383c248",
+          "owned_hashes": [
+            "18e7cdb94b95b215db03da732a6e4e9bba79a1163a352a71b071717c09339de5",
+            "a4b92cfef9c1e08ab2641e8597136e5c69177c941f32de013bb5e0f53c5aa14e",
+            "bee4d78f0cc9342851275d4f23d802cb34c6942987a6fb94c01e3bd0b383c248"
+          ]
+        },
+        {
+          "path": "scripts/github-backup.ps1",
+          "source_hash": "60ac4a31c547a896cb07dbc9352fa1ef694e145880ad538bebaced4738b615b0",
+          "owned_hashes": [
+            "60ac4a31c547a896cb07dbc9352fa1ef694e145880ad538bebaced4738b615b0"
+          ]
+        },
+        {
+          "path": "scripts/github-sync.ps1",
+          "source_hash": "cc178cd21e90cb37b447fe4b960e29ac3f4eaf687cc3827bdbac7a3bea70e304",
+          "owned_hashes": [
+            "cc178cd21e90cb37b447fe4b960e29ac3f4eaf687cc3827bdbac7a3bea70e304"
+          ]
+        },
+        {
+          "path": "scripts/invoke-powershell.ps1",
+          "source_hash": "f3aafa0ad051db45aab2545bcae3514fa7cf31749276c8d61e50e46ea573eb0c",
+          "owned_hashes": [
+            "f3aafa0ad051db45aab2545bcae3514fa7cf31749276c8d61e50e46ea573eb0c"
+          ]
+        },
+        {
+          "path": "scripts/invoke-powershell.sh",
+          "source_hash": "c97345ed61fbad0281165b12d32b9c56c8d9b02ce80f43baec941e1a004c93ce",
+          "owned_hashes": [
+            "c97345ed61fbad0281165b12d32b9c56c8d9b02ce80f43baec941e1a004c93ce"
+          ]
+        },
+        {
+          "path": "scripts/validate-skill.ps1",
+          "source_hash": "4915b060634573f3ba31bb0baf697ec57f69e656d08078cee9a3a9c4840b7d8f",
+          "owned_hashes": [
+            "f6deb899a9c6d70fa2f90c616d06bece7cd3fee94d60f27bec16b9fe006ea689",
+            "30dfb7282a05bbb5263ccecade3661543c2b7df781833253a75938669411878a",
+            "72642409ee2b1636b72f69eb531c86425ea2e250547bec5729f46d9d9cd0d665",
+            "d1ad67e2968b09a17c26abf377fe41c9ea27520bb9bc086a054a79298d328877",
+            "9a13951d02a71d279f6f278045ac43fe839d35929c8a926b9cf6a70f93fefb47",
+            "07649f826bb6828c4770295725241e4c0f4b0d36252a122c9d0bc07879e5c8ca",
+            "4915b060634573f3ba31bb0baf697ec57f69e656d08078cee9a3a9c4840b7d8f"
+          ]
+        }
+      ],
+      "predecessor_only_owned_paths": []
+    },
+    {
+      "workflow_version": 7,
+      "state": "active",
+      "runtime": {
+        "executable": "pwsh",
+        "minimum_version": "7.6.0",
+        "fallback_policy": "none",
+        "fallback_executable": null,
+        "fallback_minimum_version": null
+      },
+      "hash_policy": {
+        "algorithm": "sha256",
+        "mechanism": "declared-source-and-owned-hashes"
+      },
+      "same_version_additions": [
+        {
+          "path": "scripts/configure-default-activation.ps1"
+        }
+      ],
+      "required_paths": [
+        {
+          "path": "SKILL.md",
+          "source_hash": "38c61772bfc290862d21358c0a3816c38154803a9f3bac3d871fc6b23acf6038",
+          "owned_hashes": [
+            "a62897ced6752f11f4fd2b9a05ff38cc5cd5bcb76de33bad6fd322999b0f16d7",
+            "38c61772bfc290862d21358c0a3816c38154803a9f3bac3d871fc6b23acf6038"
+          ]
+        },
+        {
+          "path": "agents/openai.yaml",
+          "source_hash": "9a6876553f0234ac268b5629a082ab79bc67379206df0d6c012529f392143576",
+          "owned_hashes": [
+            "e74d415f29d359baf96f76248a5029853afddc4e3d75b49ade3ebcc50dbce13d",
+            "9a6876553f0234ac268b5629a082ab79bc67379206df0d6c012529f392143576"
+          ]
+        },
+        {
+          "path": "references/new-project-setup-checklist.md",
+          "source_hash": "c047c927d78712cbfcb72044c706a8362afe50cded11b48712be8c9ceb8b9eb3",
+          "owned_hashes": [
+            "189c3956595e3a97e5fe20e8bb6492db7047c2d7a2e27602b0f83b9fee81e261",
+            "c047c927d78712cbfcb72044c706a8362afe50cded11b48712be8c9ceb8b9eb3"
+          ]
+        },
+        {
+          "path": "references/install-and-migration.md",
+          "source_hash": "e44a939b54e70e5801629f75fc8c15fdc81fdfe70add690506c3c5d84922f626",
+          "owned_hashes": [
+            "39344de48b894d7d2b32357672f9bb11093c43978b2339496bbd05c39513b81c",
+            "e44a939b54e70e5801629f75fc8c15fdc81fdfe70add690506c3c5d84922f626"
+          ]
+        },
+        {
+          "path": "references/execution-and-continuity.md",
+          "source_hash": "f39eb8f98bc5620b248fdf32e8efae9b3073717748164c0ff8323fed8e495bcc",
+          "owned_hashes": [
+            "5513692899909434e39aa73806683d52a76db92f96bec20b8faa0bd4cf1347a6",
+            "f39eb8f98bc5620b248fdf32e8efae9b3073717748164c0ff8323fed8e495bcc"
+          ]
+        },
+        {
+          "path": "references/local-saving.md",
+          "source_hash": "c10ce58c88fa7f2126899e37b9c84ab700777a92c5de2521e0e00bcb8bdc1143",
+          "owned_hashes": [
+            "c7d1aafb04cc6babb4da2783b581b43e9bfc9f142564a06555a107baa6d8d271",
+            "c10ce58c88fa7f2126899e37b9c84ab700777a92c5de2521e0e00bcb8bdc1143"
+          ]
+        },
+        {
+          "path": "templates/agents-workflow-block.md",
+          "source_hash": "d2437d870ba4a62ce7df5531815f7248b5e2834a568559181be78ecb78fd8a62",
+          "owned_hashes": [
+            "64d16a99eea25ea90480dc4bb1fc774b42a486612e73fe0f743fdd130c18ffdb",
+            "d2437d870ba4a62ce7df5531815f7248b5e2834a568559181be78ecb78fd8a62"
+          ]
+        },
+        {
+          "path": "templates/project-summary.md",
+          "source_hash": "34a13f562e3aa11ea16fa613255afcd8822104114582fa42916c29b728ec36eb",
+          "owned_hashes": [
+            "34a13f562e3aa11ea16fa613255afcd8822104114582fa42916c29b728ec36eb"
+          ]
+        },
+        {
+          "path": "templates/codex-handoff.md",
+          "source_hash": "9a745ef855e8fb8962e1749efde6d7bee00c65fc1332d662a02106d12c64bb5d",
+          "owned_hashes": [
+            "7eef591639f80b462cc3777cde3cc4aaff8078b9f412b9d637a0aae7adf7f9bd",
+            "9a745ef855e8fb8962e1749efde6d7bee00c65fc1332d662a02106d12c64bb5d"
+          ]
+        },
+        {
+          "path": "scripts/apply-project-setup.ps1",
+          "source_hash": "d46b1a200c9e7b344223f3a9bceb03d1a5b31a82ddc50182f19a15308c7f8d63",
+          "owned_hashes": [
+            "18e7cdb94b95b215db03da732a6e4e9bba79a1163a352a71b071717c09339de5",
+            "a4b92cfef9c1e08ab2641e8597136e5c69177c941f32de013bb5e0f53c5aa14e",
+            "bee4d78f0cc9342851275d4f23d802cb34c6942987a6fb94c01e3bd0b383c248",
+            "d46b1a200c9e7b344223f3a9bceb03d1a5b31a82ddc50182f19a15308c7f8d63"
+          ]
+        },
+        {
+          "path": "scripts/apply-project-setup-v7.ps1",
+          "source_hash": "d7b8e45328fbcf2baf9aeb70ac626ddf9e5f4572a8643b53da068ba767887841",
+          "owned_hashes": [
+            "81e8ba1f52c26eed60f25354a211611a6721905fa26141e26382b03a02264961",
+            "74371255de7e0be422c188c43de118534116c0a05a45b09326b9d6fa646da229",
+            "38993c4fa7adacc7ccf1cf6d572d56171f594aa2151b5db8d6f1825b4c4d0d90",
+            "4d323785c912ea5657ec3d0b06f8ef8e84d56f08fcaf5d9a9cc9a30ca44c05cc",
+            "9bf037685a6c7ec1acab62e786d13ce578a890158dffa328a9634539cfc30764",
+            "0331ae7c152a6edfde674e11bed440ac52de9f6ff29034411f9c8ba89456b2d2",
+            "d7b8e45328fbcf2baf9aeb70ac626ddf9e5f4572a8643b53da068ba767887841"
+          ]
+        },
+        {
+          "path": "scripts/configure-default-activation.ps1",
+          "source_hash": "b34ccbb29ea4b1d0ecefab92fda6e01ded86a5e2822af2d55dcc15b2670fe447",
+          "owned_hashes": [
+            "0083121afde799136d715444fcc3736573670c2271a99808780d0741aaa9ef28",
+            "b34ccbb29ea4b1d0ecefab92fda6e01ded86a5e2822af2d55dcc15b2670fe447"
+          ]
+        },
+        {
+          "path": "scripts/save-local-work.ps1",
+          "source_hash": "78bcb38ecab3360d40e872c77dc28303ec397632bf5b10aec72756ab5024dbce",
+          "owned_hashes": [
+            "5534efa844f7076d3c0d24af224278adfb4877bc8116ce99a8ff55e0012399e0",
+            "82b9909dec52bc1a5ddd845221a187bb465e1c769874f21ded528c6dce365baf",
+            "9bc5692348c01e5e334cdd837a076c9e6bc9d60e9c3546630483f95a43a0f3ef",
+            "78bcb38ecab3360d40e872c77dc28303ec397632bf5b10aec72756ab5024dbce"
+          ]
+        },
+        {
+          "path": "scripts/invoke-powershell.ps1",
+          "source_hash": "8456a02ac9630010d9a833040740843b4b9a6f9a8a3841baa011066174e2c3ac",
+          "owned_hashes": [
+            "ebda9513b04ce0ae0688ec22abd8aaa90fd8f011cdac4754ca0700ed5684d1ae",
+            "8456a02ac9630010d9a833040740843b4b9a6f9a8a3841baa011066174e2c3ac"
+          ]
+        },
+        {
+          "path": "scripts/invoke-powershell.sh",
+          "source_hash": "5e4b7e8bc922938342254c77673abe8642675d9122a3cd4c7e0cdcf854701f13",
+          "owned_hashes": [
+            "5e4b7e8bc922938342254c77673abe8642675d9122a3cd4c7e0cdcf854701f13"
+          ]
+        },
+        {
+          "path": "scripts/validate-skill.ps1",
+          "source_hash": "1258931e8d12aae86b99b6c0d3b8689495ad762d72e00b24c67b0fd62bb3e5a6",
+          "owned_hashes": [
+            "d1ad67e2968b09a17c26abf377fe41c9ea27520bb9bc086a054a79298d328877",
+            "9a13951d02a71d279f6f278045ac43fe839d35929c8a926b9cf6a70f93fefb47",
+            "07649f826bb6828c4770295725241e4c0f4b0d36252a122c9d0bc07879e5c8ca",
+            "4915b060634573f3ba31bb0baf697ec57f69e656d08078cee9a3a9c4840b7d8f",
+            "8348945d56a55d659a5e1bfcb98ed50850e3c0916c777ff5505116c216a68575",
+            "ad0fff7dd4bd0950c8ccd75b50458482ece21a481cfb3770aa7927e81859b2d0",
+            "6fa26655866e274c682cb15da5d48ed910a336c284b3118cefe19dcede96a52f",
+            "e90e3bfa86b4d456e9f1f2b0f48d05181629b3d498135e5aecc9320d267d9d78",
+            "785fba429c2944730d39c0bbb775e02e9e6e4608d3b832f776a2a0d6291ee7eb",
+            "614b4c37e48bc5b65cdba16a9d70e1f43f9fbadc52ff4ddd24de9e771948f39a",
+            "1258931e8d12aae86b99b6c0d3b8689495ad762d72e00b24c67b0fd62bb3e5a6"
+          ]
+        }
+      ],
+      "predecessor_only_owned_paths": [
+        {
+          "path": "references/execution-and-memory.md",
+          "from_version": 6,
+          "owned_hashes": [
+            "33dc541a40d51d4b310c35c9b40c8b6d0ac9df99e543da49c7b988b12fc6561f"
+          ]
+        },
+        {
+          "path": "references/github-history.md",
+          "from_version": 6,
+          "owned_hashes": [
+            "39d3d5b08f30386c97b819970136a7cafde01a34533606b2b7356cad5203066d"
+          ]
+        },
+        {
+          "path": "scripts/github-backup.ps1",
+          "from_version": 6,
+          "owned_hashes": [
+            "60ac4a31c547a896cb07dbc9352fa1ef694e145880ad538bebaced4738b615b0"
+          ]
+        },
+        {
+          "path": "scripts/github-sync.ps1",
+          "from_version": 6,
+          "owned_hashes": [
+            "cc178cd21e90cb37b447fe4b960e29ac3f4eaf687cc3827bdbac7a3bea70e304"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,152 +1,153 @@
 ---
 name: new-project-setup
-description: Install or sync an efficient low-intervention durable project workflow with adaptive execution, progressive context, proportional public-ready memory, and audited private GitHub history. Use automatically for ordinary requests to create or build a new durable app, or to create, start, initialize, or bootstrap a durable project or repository, and for explicit requests to apply, install, update, refresh, or sync this workflow. A bare or primary invocation runs install/sync. Questions about the skill are consultation-only. Do not trigger for ordinary implementation, fixes, or review inside an existing project.
+description: Install or synchronize a lean local-first workflow for durable apps, projects, and repositories with progressive context, proportional validation, and scoped local Git saving. Use for explicit setup or sync requests, ordinary creation of a new durable project, and explicit global automatic/manual activation requests. Do not invoke for routine work inside an existing project unless the user enabled the skill's global automatic default and project workflow state is absent.
 ---
 
 # New Project Setup
 
-Install or synchronize the durable workflow and complete clear bounded work
-end-to-end with low intervention.
+Install or synchronize one durable project workflow and keep normal completion
+local, bounded, and resumable.
 
 ## Activation And Scope
 
-A bare or primary `$new-project-setup` invocation runs install/sync; do not stop
-after loading or require another action word. Activate implicitly for an
-ordinary request to create or build a new durable app when that work requires a
-new project, and for requests to create, start, initialize, or bootstrap a
-durable project or repository.
+A bare or primary `$new-project-setup` invocation applies or synchronizes the
+workflow. Activate implicitly when creating a new durable app, project, or
+repository. Ordinary implementation, fixes, review, and continuation inside an
+existing project do not automatically reinstall setup in manual mode.
 
-Do not activate for implementation, fixes, review, or continuation inside an
-existing project. A question about the skill, its behavior, or prior changes is
-consultation-only and authorizes no edits.
+The global activation mode is a user-level choice, not a per-project setting.
+Manual is the default and requires explicit skill invocation for each existing
+project. Automatic mode is an explicit opt-in that installs a bounded managed
+block in the user's global Codex `AGENTS.md`; it invokes this skill before
+meaningful implementation in a Git repository whose workflow state is absent.
+It does not trigger for read-only consultation or clearly disposable temporary
+work, and it never broadens setup to sibling repositories.
 
-Resolve exactly one target from the current request or active task subject.
-Never update an accessible sibling project in bulk. In this source project,
-maintain source first and synchronize the installed runtime. In another
-project, apply the installed workflow only there; do not modify this source or
-runtime.
+Use `scripts/configure-default-activation.ps1` for explicit requests to enable,
+disable, or inspect the global default. Skill installation or synchronization
+must never silently select automatic mode. The helper owns only its marked
+global block and preserves unrelated global instructions.
+
+Resolve exactly one target from the request and active task subject. Never
+update an accessible sibling project in bulk.
+
+In this authoritative source project, update source first, validate it, then
+transactionally synchronize the installed runtime. In every other project, use
+the installed workflow for that target only; do not modify this source or the
+installed runtime.
+
+Questions about the skill are consultation-only and authorize no edits.
+
+## Progressive Context
+
+Orient with the smallest useful sequence:
+
+1. Read `docs/project-summary.md` for stable project orientation.
+2. Read `docs/codex-handoff.md` when continuing current work.
+3. Inspect directly relevant files, diffs, and validation evidence.
+4. Read or update `docs/development-log.md` only when durable reasoning has
+   future maintenance value.
+5. Broaden repository discovery only when evidence requires it.
+
+Do not rediscover the whole repository at every session. Reconstruct stale or
+missing context from Git and direct evidence only to the depth needed.
+
+## Durable Context
+
+`docs/project-summary.md` stores stable purpose, architecture, interfaces,
+dependencies, commands, and constraints. `docs/codex-handoff.md` stores compact
+current-work continuity and replaces obsolete task history instead of
+accumulating a transcript. `docs/development-log.md` is conditional decision
+memory, not a routine activity log. `.codex/new-project-setup.json` is
+operational ownership state only.
+
+Update durable context when objective state, decisions, blockers, validation,
+or the next action materially changes. Keep machine-private details in ignored
+local files.
+
+## Apply Or Synchronize
+
+Use the declared PowerShell launcher and active apply entry point. A default
+application installs workflow version 7; `-Check` reports drift without writing.
+Fresh targets receive only the lean declared payload and exact-root local Git
+initialization when needed.
+
+A recognized workflow-v6 target is migrated through the frozen bounded
+contract described in `references/install-and-migration.md`. Its compatibility
+export remains ignored and outside v7 ownership. Legacy target helpers are
+preserved but inert.
+
+Preserve project guidance outside managed markers, existing continuity,
+history, and unrelated work. Recheck root, branch, `HEAD`, status, and scope at
+write boundaries. Fail closed on modified ownership, redirected paths,
+collisions, or concurrent change.
+
+## Configure The Global Default
+
+Map a clear user choice to one of these installed-skill operations:
+
+```powershell
+pwsh -NoProfile -File <installed-skill>/scripts/configure-default-activation.ps1 -Mode Automatic
+pwsh -NoProfile -File <installed-skill>/scripts/configure-default-activation.ps1 -Mode Manual
+pwsh -NoProfile -File <installed-skill>/scripts/configure-default-activation.ps1 -Status
+```
+
+Automatic and Manual mutate only the helper-owned block in the user-level
+Codex `AGENTS.md`. `-Status` is read-only. A malformed or duplicated block,
+unsafe path, invalid UTF-8 file, or concurrent change fails closed. Do not
+reinterpret the global choice as per-project state, and do not change the mode
+unless the user explicitly asks.
+
+## Execution And Validation
+
+Continue clear bounded work without routine questions. Preserve implementation
+and reusable output; discard only disposable exploration created for the
+current task and confirmed unused. Promote retained exploration automatically.
+
+Validate proportionally to changed behavior and material risk. Reuse valid
+evidence and rerun only failed or invalidated checks. When equivalent probes
+repeat without material progress, change strategy and use a minimal
+reproduction only when it can distinguish the remaining cause. Run no more than
+one broad final matrix unless earlier evidence was invalidated.
+
+Obtain authorization immediately before destructive actions, deployment,
+machine-level installation, shared or production data changes, credentials,
+paid services, or changes outside the resolved project. Routine bounded local
+implementation, validation, and saving remain within scope.
+
+Use `references/execution-and-continuity.md` for detailed execution, context,
+validation, authorization, and durable-continuity rules.
+
+## Local Saving And Completion
+
+Save durable work through `scripts/save-local-work.ps1` using its accepted
+`Prepare` then `Commit` protocol. Declare only whole-file or whole-directory
+objective paths. Require its clean-index, exact-root, branch/HEAD, ownership,
+content-scan, hook, and signing safety contracts. Preserve unrelated staged,
+unstaged, and untracked work.
+
+Update durable context before the scoped save when needed. Completion requires
+current relevant validation, accurate continuity, and a successful local save
+or an explicit accurate blocker. Ordinary scoped local saving is not remote
+publication. A remote, GitHub repository, push, backup, transfer audit, or
+remote CI result is never required for normal completion.
+
+Use `references/local-saving.md` for protocol details and failure handling.
+
+## Runtime
+
+Active workflow automation requires PowerShell Core 7.6 or later through
+`pwsh`. No Windows PowerShell fallback exists. Git is required for project
+ownership and local saving. Application-stack selection remains outside this
+skill.
 
 ## Reference Routes
 
-Use deterministic scripts directly on the normal path. Load only the reference
-needed for an exception or interpretation:
-
-- Prerequisites, initialization, target resolution, or migration:
+- Prerequisites, target resolution, fresh installation, or v6 migration:
   `references/install-and-migration.md`
-- Classification, context, evidence, convergence, memory, or protected action:
-  `references/execution-and-memory.md`
-- GitHub initialization, audit, divergence, push, or fallback:
-  `references/github-history.md`
-- Final troubleshooting or a complete setup audit:
+- Execution, context, validation, authorization, or continuity exceptions:
+  `references/execution-and-continuity.md`
+- Local Prepare/Commit protocol and failure handling:
+  `references/local-saving.md`
+- Final local setup and completion audit:
   `references/new-project-setup-checklist.md`
-
-Expand relevant context when evidence requires it; do not make context growth
-or validation transitions into routine user checkpoints.
-
-## Automation Runtime
-
-Keep workflow automation PowerShell-first without choosing an application
-stack. Prefer PowerShell 7 everywhere; retain Windows PowerShell 5.1 on Windows.
-Use the bundled platform launcher; the user should not need to select a runtime
-or remember syntax. Detect a missing runtime and ask before installing it.
-
-## Install Or Sync
-
-1. Resolve one target. For a new project, create its directory and initialize
-   Git through `install-and-migration.md`; record root, branch, committed
-   `HEAD`, status, remotes, setup state, handoff, and dirty work.
-2. For a normal target, invoke the installed `apply-project-setup.ps1` through
-   the current PowerShell host or bundled platform launcher. In this source,
-   run the source helper, validate it, then sync runtime. Never apply an older
-   installed helper over source.
-3. Preserve guidance outside managed markers, memory, history, and unrelated
-   work. Recheck branch, `HEAD`, and scope before staging or committing; stop
-   for overlapping concurrent changes or unsafe state.
-4. Initialize a missing private destination with `github-sync.ps1 -Initialize`
-   and include its state in the next commit.
-5. Before each lasting Codex commit, stage only scoped changes and run
-   `github-sync.ps1 -PreCommit -CommitMessage '<exact message>'`; immediately
-   commit that exact tree and message. Missing or mismatched attestation fails
-   safe to immediate synchronization.
-6. After focused small work, run `github-sync.ps1 -BatchEligible`: defer one
-   through nine verified local commits and sync all on the tenth, with no time
-   trigger. Setup, broader work, milestones, releases, explicit requests,
-   absent branches, and uncertainty sync immediately.
-7. Normal private sync audits after the fetched verified destination tip;
-   empty destinations audit full ancestry with private-source rules that block
-   high-confidence secrets and unsafe Git objects without treating operational
-   metadata as a push blocker. Public-readiness and isolated fallback use
-   stricter public-metadata review. Use only the explicitly guarded
-   clean-baseline recovery for qualifying local-only legacy ancestry. Otherwise
-   ask for isolated fallback or local-only. Never force push, expose matched
-   values, or change visibility. Follow
-   `github-history.md` for the complete rules.
-8. In this source, sync and validate the installed skill and exact payload
-   parity before the source commit.
-
-## Adaptive Execution
-
-Infer durability, operational risk, and effort independently. Applications,
-features, fixes, and reusable output are lasting. `Quick`, `prototype`, and
-`MVP` do not mean disposable. Promote useful exploration automatically and
-never demote lasting work. Ask one preservation question only when durability
-is genuinely ambiguous.
-
-Operational risk controls authorization. Effort is focused, standard, or
-release-critical and controls context and evidence depth, not authority. State
-a clear classification briefly and continue without routine implementation or
-validation questions.
-
-Start durable changes with Git status, the concise handoff, and relevant files.
-Read other memory only when useful; broaden automatically for dependencies,
-failures, or risk. Clearly exploratory work may stay local, but only current
-uncommitted artifacts created by Codex and confirmed unused may be removed.
-
-A bounded local build authorizes architecture and implementation choices,
-established project-local dependencies, tests, generated files, demo data, and
-new empty-database schemas or migrations. A reasonable initial stack for a new
-empty project is locally authorized; replacing an existing platform is not.
-
-## Completion And Evidence
-
-Use one completion/evidence invariant: claim completion only when every
-acceptance criterion passes, every material risk or protected boundary has
-distinct evidence, no unresolved high-risk failure remains, and durable records
-are current. Evidence is distinct only when it covers a materially different
-risk or protected boundary; a different code path, screenshot, value, viewport,
-theme, or view alone is equivalent evidence.
-
-Keep a compact risk/evidence ledger, reuse valid evidence, and retest only what
-failed or became invalid. Run one effort-appropriate final matrix after targeted
-checks pass; do not restart a broad matrix after failure. Non-improving cycles
-trigger a different strategy and then a minimal reproducer, not automatic
-termination. If completion cannot be reached, stop unresolved only when the
-latest strategy made no material progress and no credible bounded probe
-remains; preserve diagnostics and report the blocker. The routed execution
-reference defines these mechanics.
-
-## Durable Memory
-
-Preserve every lasting revision in Git. Update public-ready memory only when it
-adds future value: decisions and lessons in `docs/development-log.md`, current
-state and valid/remaining evidence in `docs/codex-handoff.md`, and notable
-reader-facing changes in `CHANGELOG.md`. Keep private data in ignored
-`*.local.md` or approved secret storage.
-
-Refresh the handoff at objective, package, blocker, handoff, or commit/sync
-boundaries. Prepare it before its containing commit and describe state relative
-to that commit. A matching push needs no bookkeeping-only follow-up commit.
-
-## Protected Boundaries
-
-Ask before credentials or live/paid services; auth/security changes; global or
-native installation; framework/platform replacement; consequential licensing;
-existing, shared, or production data changes; destructive operations; material
-product expansion; unrelated conflicting work; unsafe state; or deployment.
-
-Deployment requires confirmation immediately before the action unless the
-current request explicitly names the deployment target and effect and waives
-that additional checkpoint; that explicit waiver is the confirmation. A
-request that merely asks for deployment is not a waiver. One confirmation may
-cover multiple protected effects only when it explicitly identifies all of
-them.

@@ -1,32 +1,39 @@
-﻿# New Project Setup for Codex
+# New Project Setup for Codex
 
-`new-project-setup` is a Codex skill for durable, low-intervention project work.
-It lets Codex handle routine implementation, validation, project memory, local
-Git commits, and audited private GitHub synchronization without requiring the
-user to remember special commands or workflow prompts.
+`new-project-setup` installs a lean, local-first workflow for durable apps,
+projects, and repositories. Workflow V7 keeps continuity in a stable project
+summary and compact handoff, validates in proportion to risk, and saves only
+explicitly scoped work to local Git.
 
-## What It Does
+V7 is active/default. V6 is retained only as frozen ownership evidence for a
+bounded migration. The installable directory is an exact standalone 16-file
+payload and contains no V6 GitHub helpers or predecessor-only references.
 
-- Applies or refreshes the workflow when `$new-project-setup` is invoked by
-  itself in a resolved project.
-- Activates automatically when Codex creates a new durable application or
-  project, but not for ordinary work inside an existing project.
-- Infers durability, operational risk, and effort independently, then completes
-  bounded local work without routine approval checkpoints.
-- Uses progressive context, proportional development memory, distinct-risk
-  evidence, and progress-aware debugging to avoid repeated broad review loops.
-- Maintains public-ready source history while keeping credentials and private
-  operational details local.
-- Creates private GitHub repositories when needed and audits every source commit
-  before fast-forward synchronization.
-- Preserves a separately authorized isolated sanitized fallback when legacy
-  source history cannot pass the full audit.
+## What V7 Provides
 
-Deployment, credentials, security changes, destructive operations, existing or
-production data, global tool installation, and other protected effects retain
-explicit authorization boundaries.
+- exact-root local Git initialization when a target is not already a repository
+- progressive context instead of repeated broad project scans
+- proportional validation and progress-aware debugging
+- compact durable project continuity
+- scoped, verified local commits
+- transactional migration from an exact recognized V6 project
+- local completion with no GitHub, remote, CI, ACF, external memory, or backup
+  dependency
+- a skill-owned global Manual/Automatic activation choice
 
-## Install
+Migrated V6 projects may retain legacy GitHub helpers byte-for-byte as inert,
+unowned files. V7 neither invokes nor requires them.
+
+## Requirements
+
+- PowerShell Core 7.6 or later, invoked as `pwsh`
+- Git
+
+Windows PowerShell 5.1 fallback is not supported. The release has been
+validated on Windows and Linux. macOS has not been directly validated, so no
+macOS support result is claimed.
+
+## Install or Update
 
 Give Codex this exact skill-directory URL:
 
@@ -34,17 +41,11 @@ Give Codex this exact skill-directory URL:
 https://github.com/wildbillwilly-a51/new-project-setup-skill/tree/main/new-project-setup
 ```
 
-Then ask:
+Then ask Codex to install, or update, the `new-project-setup` skill globally
+from that GitHub path. Installing or updating the skill never changes the
+user's activation choice.
 
-```text
-Install the new-project-setup skill globally for this Codex installation from
-that GitHub path.
-```
-
-The `new-project-setup/` directory is the exact twelve-file installable payload.
-Restart Codex if the installed skill is not recognized immediately.
-
-## Use
+## Use Manually
 
 Open the intended project and invoke:
 
@@ -52,23 +53,59 @@ Open the intended project and invoke:
 $new-project-setup
 ```
 
-The workflow applies to that project only. Questions about the skill remain
-consultation-only and do not modify a project.
+Manual is the default. In Manual mode, existing projects are changed only when
+the skill is explicitly invoked for that project. Questions about the skill
+remain consultation-only.
 
-## Update
+## Choose the Global Default
 
-Give Codex the same skill-directory URL and ask it to update the globally
-installed `new-project-setup` skill. Existing projects adopt the updated
-workflow when `$new-project-setup` is invoked in each project.
-
-## Validate
-
-From a PowerShell prompt in a clone of this repository:
+The activation choice belongs to the Codex installation, not to each project.
+Use the installed helper only when you explicitly want to change or inspect it:
 
 ```powershell
-.\new-project-setup\scripts\validate-skill.ps1 -SkillRoot .\new-project-setup
+# Opt in once to bounded automatic activation for qualifying Git repositories.
+pwsh -NoProfile -File <installed-skill>/scripts/configure-default-activation.ps1 `
+  -Mode Automatic
+
+# Return to explicit skill invocation for each project.
+pwsh -NoProfile -File <installed-skill>/scripts/configure-default-activation.ps1 `
+  -Mode Manual
+
+# Read the current choice without writing.
+pwsh -NoProfile -File <installed-skill>/scripts/configure-default-activation.ps1 `
+  -Status
 ```
 
-## License
+Automatic mode adds only the skill's marked block to the user-level Codex
+`AGENTS.md` and preserves unrelated instructions. It invokes setup before
+meaningful implementation in a Git repository whose workflow state is absent;
+it does not trigger for read-only consultation or clearly disposable temporary
+work. Updating the skill preserves the selected mode.
 
-Licensed under the [MIT License](LICENSE).
+## Apply from the Installed Skill
+
+```powershell
+pwsh -NoProfile -File <installed-skill>/scripts/apply-project-setup.ps1 `
+  -ProjectRoot <project>
+```
+
+Use `-Check` for a read-only drift check.
+
+## Validate a Checkout
+
+Source validation additionally requires Python 3 with PyYAML:
+
+```powershell
+pwsh -NoProfile -File .\new-project-setup\scripts\validate-skill.ps1 `
+  -SkillRoot .\new-project-setup `
+  -PayloadManifestPath .\skill-payload.json `
+  -PayloadRole Installed
+```
+
+The manifest is distribution metadata outside the 16-file installable
+directory.
+
+## Security and License
+
+See [SECURITY.md](SECURITY.md) for local-only trust boundaries and responsible
+reporting guidance. This project is licensed under the [MIT License](LICENSE).
