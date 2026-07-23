@@ -44,30 +44,25 @@ if ([IO.Path]::GetExtension($resolvedScript) -ine '.ps1') {
 }
 $runningOnWindows = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
 $hostExecutable = $null
+$candidateNames = if ($runningOnWindows) { @('pwsh.exe', 'pwsh') } else { @('pwsh') }
 
-foreach ($name in @('pwsh.exe', 'pwsh')) {
+foreach ($name in $candidateNames) {
     $candidate = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $candidate) { continue }
-    & $candidate.Source -NoLogo -NoProfile -NonInteractive -Command 'if ($PSVersionTable.PSVersion.Major -ge 7) { exit 0 }; exit 1' *> $null
+    & $candidate.Source -NoLogo -NoProfile -NonInteractive -Command "if (`$PSVersionTable.PSEdition -eq 'Core' -and `$PSVersionTable.PSVersion -ge [Version]'7.6.0') { exit 0 }; exit 1" *> $null
     if ($LASTEXITCODE -eq 0) {
         $hostExecutable = $candidate.Source
         break
     }
 }
 
-if (-not $hostExecutable -and $runningOnWindows) {
-    $candidate = Get-Command powershell.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($candidate) { $hostExecutable = $candidate.Source }
-}
 if (-not $hostExecutable) {
-    [Console]::Error.WriteLine('PowerShell 7 is required on macOS/Linux; Windows PowerShell 5.1 is the Windows fallback.')
+    [Console]::Error.WriteLine('PowerShell Core 7.6 or later (pwsh) is required. No legacy-host fallback is supported.')
     exit 127
 }
 
 $hostArguments = @('-NoLogo', '-NoProfile', '-NonInteractive')
-if ($runningOnWindows -and [IO.Path]::GetFileName($hostExecutable) -ieq 'powershell.exe') {
-    $hostArguments += @('-ExecutionPolicy', 'Bypass')
-}
+if ($runningOnWindows) { $hostArguments += @('-ExecutionPolicy', 'Bypass') }
 $childArguments = New-Object Collections.Generic.List[string]
 foreach ($argument in $hostArguments) { $childArguments.Add([string]$argument) }
 $childArguments.Add('-File')

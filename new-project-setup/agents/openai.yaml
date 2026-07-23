@@ -1,7 +1,7 @@
 interface:
   display_name: "New Project Setup"
-  short_description: "Set up new durable apps and projects with lasting memory"
-  default_prompt: "Use $new-project-setup when creating a new durable app or project, or when explicitly installing or syncing its workflow. Do not invoke it for ordinary work inside an existing project."
+  short_description: "Install a local-first workflow or configure its global default"
+  default_prompt: "Use $new-project-setup to create or explicitly synchronize one durable project, or to explicitly enable, disable, or inspect its global automatic default. Manual activation remains the default. Do not reinstall setup for routine work inside an existing project. Orient from project summary and handoff, validate proportionally, and complete with scoped local saving."
 
 policy:
   allow_implicit_invocation: true

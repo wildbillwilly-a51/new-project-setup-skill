@@ -1,0 +1,12 @@
+# Local predecessor configuration and migration evidence
+.github-backup.json
+.github-backup.local.json
+.codex/migrations/*.local.json
+
+# Local validation and packaging residue
+export/
+*.log
+*.tmp
+*.bak
+__pycache__/
+.pytest_cache/
